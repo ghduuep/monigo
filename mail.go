@@ -5,10 +5,6 @@ import (
 	"net/smtp"
 )
 
-func main() {
-	sendEmailNotification("https://example.com", "UP")
-}
-
 func sendEmailNotification(url string, status string) {
 	auth := smtp.PlainAuth("", "ghduuep@gmail.com", "krve whaq yzpi jwcq", "smtp.gmail.com")
 
@@ -18,8 +14,10 @@ func sendEmailNotification(url string, status string) {
 		"\r\n" +
 		"The status of " + url + " has changed to " + status + ".\r\n")
 
-	err := smtp.SendMail("smtp.gmail.com:587", auth, "ghduep@outlook.com", to, msg)
+	err := smtp.SendMail("smtp.gmail.com:587", auth, "ghduuep@gmail.com", to, msg)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Printf("Notification send for %s", to)
 }

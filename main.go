@@ -69,6 +69,7 @@ func startMonitoring(website Website) {
 
 		if status != website.LastStatus && website.LastStatus != "UNKNOWN" {
 			log.Printf("Status alterado para %s para o site %s", status, website.URL)
+			sendEmailNotification(website.URL, status)
 		}
 		website.LastStatus = status
 		time.Sleep(website.Interval)
