@@ -1,9 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
 	"time"
 )
 
@@ -31,47 +29,36 @@ func main() {
 		Interval:   5 * time.Minute,
 		LastStatus: "UNKNOWN",
 	}
-	go startMonitoring(gfarma)
-	go startMonitoring(cafefacil)
-	go startMonitoring(titantelecom)
+
+	go monitorLoop(&gfarma)
+	go monitorLoop(&cafefacil)
+	go monitorLoop(&titantelecom)
 
 	select {}
 }
 
-func checkWebsite(url string) (string, error) {
-	client := http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	resp, err := client.Get(url)
-
-	if err != nil {
-		return "DOWN", err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
-		return "UP", nil
-	}
-
-	return "DOWN", nil
-}
-
-func startMonitoring(website Website) {
-	fmt.Printf("Iniciando monitoramento para %s\n", website.URL)
-
+func monitorLoop(website *Website) {
 	for {
-		status, err := checkWebsite(website.URL)
+		newStatus, err := Check(website.URL)
+
 		if err != nil {
-			log.Printf("Erro ao verificar %s: %v", website.URL, err)
+			log.Printf("[%s] Erro: %v", website.URL, err)
 		}
 
-		if status != website.LastStatus && website.LastStatus != "UNKNOWN" {
-			log.Printf("Status alterado para %s para o site %s", status, website.URL)
-			sendEmailNotification(website.URL, status)
+		if website.LastStatus != "UNKNOWN" && website.LastStatus != newStatus {
+			log.Printf("MUDANÇA DE STATUS: %s - %s", website.URL, newStatus)
+
+			go func() {
+				err := sendEmailNotification(website.URL, newStatus)
+				if err != nil {
+					log.Printf("Erro ao enviar e-mail de aviso: %v", err)
+				}
+			}()
+		} else {
+			log.Printf("[%s] Status: %s", website.URL, newStatus)
 		}
-		website.LastStatus = status
+
+		website.LastStatus = newStatus
 		time.Sleep(website.Interval)
 	}
 }
