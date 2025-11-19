@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func Check(url string) (string, error) {
+func Check(url string) (string, string, error) {
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -13,14 +13,14 @@ func Check(url string) (string, error) {
 	resp, err := client.Get(url)
 
 	if err != nil {
-		return "DOWN", err
+		return "DOWN", "", err
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
-		return "UP", nil
+		return "UP", resp.Status, nil
 	}
 
-	return "DOWN", nil
+	return "DOWN", resp.Status, nil
 }

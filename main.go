@@ -10,10 +10,22 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type User struct {
+	ID    int
+	Name  string
+	Email string
+}
+
 type Website struct {
-	URL        string
-	Interval   time.Duration
-	LastStatus string
+	ID       int
+	UserID   int
+	URL      string
+	Interval time.Duration
+}
+
+type CheckStatus struct {
+	WebsiteID int
+	Status    string
 	CheckedAt time.Time
 }
 
@@ -30,7 +42,6 @@ func main() {
 	}
 
 	defer pool.Close()
-
 
 	err = createTable(context.Background(), pool)
 	if err != nil {
