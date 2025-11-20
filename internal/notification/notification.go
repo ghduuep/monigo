@@ -1,10 +1,10 @@
-package main
+package notification
 
 import (
 	"net/smtp"
 )
 
-func sendEmailNotification(url string, status string) error {
+func SendEmailNotification(url string, status string) error {
 	auth := smtp.PlainAuth("", "ghduuep@gmail.com", "krve whaq yzpi jwcq", "smtp.gmail.com")
 
 	to := []string{"ghduep@outlook.com"}
