@@ -23,3 +23,11 @@ func CreateWebsite(ctx context.Context, db *pgxpool.Pool, website *models.Websit
 
 	return err
 }
+
+func UpdateWebsiteStatus(ctx context.Context, db *pgxpool.Pool, websiteID int, lastStatus string) error {
+	query := `UPDATE websites SET last_status = $1, last_checked = NOW() WHERE id = $2`
+
+	_, err := db.Exec(ctx, query, lastStatus, websiteID)
+
+	return err
+}
