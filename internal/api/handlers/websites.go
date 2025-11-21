@@ -26,6 +26,7 @@ func (h *Handler) CreateWebsite(w http.ResponseWriter, req *http.Request) {
 		h.NewSitesChan <- &newWebsite
 	}()
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(newWebsite)
 }
