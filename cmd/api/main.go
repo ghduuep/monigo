@@ -9,13 +9,10 @@ import (
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/monitor"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var db *pgxpool.Pool
-
 func main() {
-	db = database.InitDB()
+	db := database.InitDB()
 	defer db.Close()
 
 	siteChannel := make(chan *models.Website)
