@@ -14,6 +14,7 @@ import (
 
 func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 	sites, err := database.GetWebsites(ctx, db)
+	log.Printf("[INFO] starting monitoring for %d websites", len(sites))
 
 	if err != nil {
 		log.Printf("[ERRO] failed to get websites on database: %v", err)
