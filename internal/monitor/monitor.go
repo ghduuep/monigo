@@ -61,8 +61,9 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 				go func(userEmail, url, status string) {
 					if err := notification.SendEmailNotification(userEmail, url, status); err != nil {
 						log.Printf("[ERRO] failed to send email to %s for %s: %v", userEmail, url, err)
+					} else {
+						log.Printf("[INFO] sent email to %s for %s: %s", userEmail, url, status)
 					}
-					log.Printf("[INFO] sent email to %s for %s: %s", userEmail, url, status)
 				}(userEmail, site.URL, newStatus)
 			}
 
