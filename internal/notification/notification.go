@@ -4,7 +4,7 @@ import (
 	"net/smtp"
 )
 
-func SendEmailNotification(url string, status string, userEmail string) error {
+func SendEmailNotification(userEmail string, url string, status string) error {
 	auth := smtp.PlainAuth("", "ghduuep@gmail.com", "krve whaq yzpi jwcq", "smtp.gmail.com")
 
 	to := []string{userEmail}

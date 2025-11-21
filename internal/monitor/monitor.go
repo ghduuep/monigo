@@ -35,10 +35,12 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 
 			if err != nil {
 				log.Printf("[ERRO] failed to get user email for %s: %v", site.URL, err)
-			}
-
-			if err := notification.SendEmailNotification(site.URL, newStatus, userEmail); err != nil {
-				log.Printf("[ERRO] failed to send email notification for %s: %v", site.URL, err)
+			} else {
+				go func(userEmail, url, status string) {
+					if err := notification.SendEmailNotification(userEmail, url, status); err != nil {
+						log.Printf("[ERRO] failed to send email to %s for %s: %v", userEmail, url, err)
+					}
+				}(userEmail, site.URL, newStatus)
 			}
 
 			if err = database.CreateLog(ctx, db, site.ID, newStatus); err != nil {
