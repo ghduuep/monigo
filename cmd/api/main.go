@@ -7,6 +7,7 @@ import (
 
 	"github.com/ghduuep/pingly/internal/api/routes"
 	"github.com/ghduuep/pingly/internal/database"
+	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/monitor"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -15,14 +16,15 @@ var db *pgxpool.Pool
 
 func main() {
 	db = database.InitDB()
-
 	defer db.Close()
 
-	router := routes.NewRouter(db)
+	siteChannel := make(chan *models.Website)
 
 	ctx := context.Background()
 
-	go monitor.StartMonitoring(ctx, db)
+	router := routes.NewRouter(db, siteChannel)
+
+	go monitor.StartMonitoring(ctx, db, siteChannel)
 
 	log.Println("API server is running on :8080")
 

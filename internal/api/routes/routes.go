@@ -4,12 +4,14 @@ import (
 	"net/http"
 
 	"github.com/ghduuep/pingly/internal/api/handlers"
+	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewRouter(db *pgxpool.Pool) *http.ServeMux {
+func NewRouter(db *pgxpool.Pool, siteChan chan *models.Website) *http.ServeMux {
 	h := &handlers.Handler{
-		DB: db,
+		DB:           db,
+		NewSitesChan: siteChan,
 	}
 
 	mux := http.NewServeMux()
