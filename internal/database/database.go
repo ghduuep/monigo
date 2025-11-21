@@ -14,19 +14,19 @@ func InitDB() *pgxpool.Pool {
 		log.Println("Cannot load .env file.")
 	}
 
-		pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 
-		if err != nil {
-			log.Fatalf("Erro ao criar pool: %v", err)
-		}
+	if err != nil {
+		log.Fatalf("Erro ao criar pool: %v", err)
+	}
 
-		err = createTables(context.Background(), pool)
+	err = createTables(context.Background(), pool)
 
-		if err != nil {
-			log.Fatalf("Erro ao criar tabelas: %v", err)
-		}
+	if err != nil {
+		log.Fatalf("Erro ao criar tabelas: %v", err)
+	}
 
-		return pool
+	return pool
 }
 
 func createTables(ctx context.Context, pool *pgxpool.Pool) error {
