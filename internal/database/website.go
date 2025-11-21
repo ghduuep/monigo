@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 
-	"github.com/ghduuep/pingly/models"
+	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/ghduuep/pingly/internal/database"
+	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/notification"
-	"github.com/ghduuep/pingly/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
