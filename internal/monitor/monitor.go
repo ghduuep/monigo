@@ -11,6 +11,46 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+func StartMonitoring(ctx context.Context, db *pgxpool.Pool, sites []*models.Website) {
+	for _, site := range sites {
+		go monitor(ctx, db, site)
+	}
+}
+
+func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
+	ticker := time.NewTicker(site.Interval)
+	defer ticker.Stop()
+
+	for {
+		newStatus, err := checkSite(site.URL)
+		if err != nil {
+			log.Printf("[ERRO] %s: %v", site.URL, err)
+			newStatus = "DOWN"
+		}
+
+		if site.LastStatus != newStatus || site.LastStatus == "UNKNOWN" {
+			log.Printf("[INFO] status has changed for %s: %s", site.URL, newStatus)
+
+			if err = database.CreateLog(ctx, db, site.ID, newStatus); err != nil {
+				log.Printf("[ERRO] failed to create log for %s: %v", site.URL, err)
+			}
+
+			if err = database.UpdateWebsiteStatus(ctx, db, site.ID, newStatus); err != nil {
+				log.Printf("[ERRO] failed to update status for %s: %v", site.URL, err)
+			} else {
+				site.LastStatus = newStatus
+			}
+		}
+
+		select {
+			case <-ctx.Done():
+			return
+			case <-ticker.C:
+			continue
+		}
+	}
+}
+
 func checkSite(url string) (string, error) {
 	client := http.Client{
 		Timeout: 10 * time.Second,
@@ -28,25 +68,4 @@ func checkSite(url string) (string, error) {
 	}
 
 	return "DOWN", nil
-}
-
-func startMonitoring(ctx context.Context, db *pgxpool.Pool, sites []*models.Website) {
-	for _, site := range sites {
-		newStatus, err := checkSite(site.URL)
-
-		if err != nil {
-			newStatus = "DOWN"
-		}
-
-		if site.LastStatus != newStatus && site.LastStatus != "UNKNOWN" {
-			log.Printf("Status of %s has changed to: %s", site.URL, newStatus)
-			if err := database.CreateLog(ctx, db, site.ID, newStatus); err != nil {
-				log.Printf("Error creating log for %s: %v", site.URL, err)
-			}
-
-			if err = database.UpdateWebsiteStatus(ctx, db, site.ID, newStatus); err != nil {
-				log.Printf("Error updating status for %s: %v", site.URL, err)
-			}
-		}
-	}
 }
