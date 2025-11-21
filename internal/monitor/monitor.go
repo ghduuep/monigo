@@ -32,6 +32,7 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 
 	for {
 		newStatus, err := checkSite(site.URL)
+		log.Printf("[INFO] checked %s: %s", site.URL, newStatus)
 		if err != nil {
 			log.Printf("[ERRO] %s: %v", site.URL, err)
 			newStatus = "DOWN"
