@@ -12,7 +12,14 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func StartMonitoring(ctx context.Context, db *pgxpool.Pool, sites []*models.Website) {
+func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
+	sites, err := database.GetWebsites(ctx, db)
+
+	if err != nil {
+		log.Printf("[ERRO] failed to get websites on database: %v", err)
+		return
+	}
+
 	for _, site := range sites {
 		go monitor(ctx, db, site)
 	}
@@ -40,6 +47,7 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 					if err := notification.SendEmailNotification(userEmail, url, status); err != nil {
 						log.Printf("[ERRO] failed to send email to %s for %s: %v", userEmail, url, err)
 					}
+					log.Printf("[INFO] sent email to %s for %s: %s", userEmail, url, status)
 				}(userEmail, site.URL, newStatus)
 			}
 
