@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func GetWebsites(ctx context.Context, db *pgxpool.Pool) ([]*models.Website, error) {
+func GetAllWebsites(ctx context.Context, db *pgxpool.Pool) ([]*models.Website, error) {
 	rows, _ := db.Query(ctx, "SELECT id, user_id, url, interval, last_checked, last_status FROM websites")
 
 	websites, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.Website])

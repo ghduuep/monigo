@@ -13,7 +13,7 @@ import (
 )
 
 func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
-	sites, err := database.GetWebsites(ctx, db)
+	sites, err := database.GetAllWebsites(ctx, db)
 	log.Printf("[INFO] starting monitoring for %d websites", len(sites))
 
 	if err != nil {
