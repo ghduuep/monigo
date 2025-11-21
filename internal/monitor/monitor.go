@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ghduuep/pingly/internal/database"
+	"github.com/ghduuep/pingly/internal/notification"
 	"github.com/ghduuep/pingly/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -30,6 +31,15 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 
 		if site.LastStatus != newStatus || site.LastStatus == "UNKNOWN" {
 			log.Printf("[INFO] status has changed for %s: %s", site.URL, newStatus)
+			userEmail, err := database.GetUserEmail(ctx, db, site.UserID)
+
+			if err != nil {
+				log.Printf("[ERRO] failed to get user email for %s: %v", site.URL, err)
+			}
+
+			if err := notification.SendEmailNotification(site.URL, newStatus, userEmail); err != nil {
+				log.Printf("[ERRO] failed to send email notification for %s: %v", site.URL, err)
+			}
 
 			if err = database.CreateLog(ctx, db, site.ID, newStatus); err != nil {
 				log.Printf("[ERRO] failed to create log for %s: %v", site.URL, err)
@@ -43,9 +53,9 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 		}
 
 		select {
-			case <-ctx.Done():
+		case <-ctx.Done():
 			return
-			case <-ticker.C:
+		case <-ticker.C:
 			continue
 		}
 	}
