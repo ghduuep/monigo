@@ -21,5 +21,5 @@ func SendEmailNotification(userEmail string, url string, status string) error {
 		"\r\n" +
 		"The status of " + url + " has changed to " + status + ".\r\n")
 
-	return smtp.SendMail(os.Getenv("EMAIL_SMTP_HOST"+":"+os.Getenv("EMAIL_SMTP_PORT")), auth, os.Getenv("EMAIL_SENDER"), to, msg)
+	return smtp.SendMail(os.Getenv("EMAIL_SMTP_HOST")+":"+os.Getenv("EMAIL_SMTP_PORT"), auth, os.Getenv("EMAIL_SENDER"), to, msg)
 }
