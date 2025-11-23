@@ -12,31 +12,26 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func StartMonitoring(ctx context.Context, db *pgxpool.Pool, newSitesChan chan *models.Website) {
-	sites, err := database.GetAllWebsites(ctx, db)
-	log.Printf("[INFO] starting monitoring for %d websites", len(sites))
-
-	if err != nil {
-		log.Printf("[ERRO] failed to get websites on database: %v", err)
-	} else {
-		for _, site := range sites {
-			go monitor(ctx, db, site)
-		}
-	}
-
-	log.Println("[INFO] monitoring started and the server is listening for new sites...")
+func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
+	monitoringMap := make(map[int]context.CancelFunc)
 
 	for {
-		select {
-		case <-ctx.Done():
-			log.Println("[INFO] stopping monitoring...")
-			return
-		case site := <-newSitesChan:
-			go monitor(ctx, db, site)
-			log.Printf("[INFO] started monitoring new site: %s", site.URL)
+		websites, err := database.GetAllWebsites(ctx, db)
+		if err != nil {
+			log.Printf("[ERRO] failed to fetch websites: %v", err)
+			continue
 		}
-	}
 
+		for _, site := range websites {
+			if _, ok := monitoringMap[site.ID]; !ok {
+				ctx, cancel := context.WithCancel(ctx)
+				monitoringMap[site.ID] = cancel
+				go monitor(ctx, db, site)
+				log.Printf("[INFO] started monitoring %s", site.URL)
+			}
+		}
+		time.Sleep(1 * time.Minute)
+	}
 }
 
 func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
