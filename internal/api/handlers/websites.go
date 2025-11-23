@@ -17,6 +17,8 @@ func (h *Handler) CreateWebsite(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	newWebsite.LastStatus = "UNKNOWN"
+
 	if err := database.CreateWebsite(req.Context(), h.DB, &newWebsite); err != nil {
 		http.Error(w, "Erro ao criar website", http.StatusInternalServerError)
 		return
