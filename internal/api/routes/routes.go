@@ -2,7 +2,6 @@ package routes
 
 import (
 	"github.com/ghduuep/pingly/internal/api/handlers"
-	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/go-chi/chi/v5"
@@ -11,10 +10,9 @@ import (
 )
 
 
-func NewRouter(db *pgxpool.Pool, siteChan chan *models.Website, tokenAuth *jwtauth.JWTAuth) *chi.Mux {
+func NewRouter(db *pgxpool.Pool, tokenAuth *jwtauth.JWTAuth) *chi.Mux {
 	h := &handlers.Handler{
 		DB:           db,
-		NewSitesChan: siteChan,
 		TokenAuth:    tokenAuth,
 	}
 
