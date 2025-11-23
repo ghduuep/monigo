@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -23,11 +24,13 @@ func (h *Handler) Login(w http.ResponseWriter, req *http.Request) {
 
 	user, err := database.GetUserByEmail(req.Context(), h.DB, creds.Email)
 	if err != nil {
+		log.Printf("[ERROR] - %v", err)
 		http.Error(w, "Invalid credentials.", http.StatusUnauthorized)
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(creds.Password)); err != nil {
+		log.Printf("[ERROR] - %v", err)
 		http.Error(w, "Invalid credentials.", http.StatusUnauthorized)
 		return
 	}

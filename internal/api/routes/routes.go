@@ -2,7 +2,6 @@ package routes
 
 import (
 	"log"
-	"os"
 
 	"github.com/ghduuep/pingly/internal/api/handlers"
 	"github.com/ghduuep/pingly/internal/models"
@@ -15,17 +14,16 @@ import (
 )
 
 
-func NewRouter(db *pgxpool.Pool, siteChan chan *models.Website) *chi.Mux {
+func NewRouter(db *pgxpool.Pool, siteChan chan *models.Website, tokenAuth *jwtauth.JWTAuth) *chi.Mux {
 	h := &handlers.Handler{
 		DB:           db,
 		NewSitesChan: siteChan,
+		TokenAuth:    tokenAuth,
 	}
 
 	if err := godotenv.Load(); err != nil {
 		log.Println("Cannot load .env file.")
 	}
-
-	tokenAuth := jwtauth.New("HS256", []byte(os.Getenv("JWT_SECRET")), nil)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

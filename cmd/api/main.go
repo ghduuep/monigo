@@ -4,14 +4,21 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/ghduuep/pingly/internal/api/routes"
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/monitor"
+	"github.com/go-chi/jwtauth"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Cannot load .env file.")
+	}
+
 	db := database.InitDB()
 	defer db.Close()
 
@@ -19,7 +26,9 @@ func main() {
 
 	ctx := context.Background()
 
-	router := routes.NewRouter(db, siteChannel)
+	tokenAuth := jwtauth.New("HS256", []byte(os.Getenv("JWT_SECRET")), nil)
+
+	router := routes.NewRouter(db, siteChannel, tokenAuth)
 
 	go monitor.StartMonitoring(ctx, db, siteChannel)
 
