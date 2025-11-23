@@ -1,12 +1,9 @@
 package routes
 
 import (
-	"log"
-
 	"github.com/ghduuep/pingly/internal/api/handlers"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -19,10 +16,6 @@ func NewRouter(db *pgxpool.Pool, siteChan chan *models.Website, tokenAuth *jwtau
 		DB:           db,
 		NewSitesChan: siteChan,
 		TokenAuth:    tokenAuth,
-	}
-
-	if err := godotenv.Load(); err != nil {
-		log.Println("Cannot load .env file.")
 	}
 
 	r := chi.NewRouter()
