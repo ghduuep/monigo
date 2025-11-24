@@ -6,6 +6,7 @@ import (
 
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
+	"github.com/go-chi/chi/v5"
 )
 
 func (h *Handler) CreateWebsite(w http.ResponseWriter, req *http.Request) {
@@ -38,4 +39,14 @@ func (h *Handler) GetAllWebsites(w http.ResponseWriter, req *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(websites)
+}
+
+func (h *Handler) DeleteWebsite(w http.ResponseWriter, req *http.Request) {
+	id := chi.URLParam(req, "id")
+	if err := database.DeleteWebsite(req.Context(), h.DB, id); err != nil {
+		http.Error(w, "Erro ao deletar website", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

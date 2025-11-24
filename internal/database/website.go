@@ -31,3 +31,11 @@ func UpdateWebsiteStatus(ctx context.Context, db *pgxpool.Pool, websiteID int, l
 
 	return err
 }
+
+func DeleteWebsite(ctx context.Context, db *pgxpool.Pool, websiteID string) error {
+	query := `DELETE FROM websites WHERE id = $1`
+
+	_, err := db.Exec(ctx, query, websiteID)
+
+	return err
+}

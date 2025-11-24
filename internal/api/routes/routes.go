@@ -9,11 +9,10 @@ import (
 	"github.com/go-chi/jwtauth"
 )
 
-
 func NewRouter(db *pgxpool.Pool, tokenAuth *jwtauth.JWTAuth) *chi.Mux {
 	h := &handlers.Handler{
-		DB:           db,
-		TokenAuth:    tokenAuth,
+		DB:        db,
+		TokenAuth: tokenAuth,
 	}
 
 	r := chi.NewRouter()
@@ -28,6 +27,7 @@ func NewRouter(db *pgxpool.Pool, tokenAuth *jwtauth.JWTAuth) *chi.Mux {
 		r.Use(jwtauth.Authenticator)
 		r.Get("/websites", h.GetAllWebsites)
 		r.Post("/websites", h.CreateWebsite)
+		r.Delete("/websites/{id}", h.DeleteWebsite)
 	})
 
 	return r
