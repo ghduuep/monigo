@@ -25,7 +25,7 @@ func main() {
 
 	log.Printf("API server is running on %s", os.Getenv("SERVER_PORT"))
 
-	if err := http.ListenAndServeTLS(":" + os.Getenv("SERVER_PORT"), router); err != nil {
+	if err := http.ListenAndServe(":" + os.Getenv("SERVER_PORT"), router); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
