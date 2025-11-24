@@ -12,6 +12,18 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+func hasConfigChanged(current, new models.Website) bool {
+	if current.URL != new.URL {
+		return true
+	}
+
+	if current.Interval != new.Interval {
+		return true
+	}
+
+	return false
+}
+
 func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 	monitoringMap := make(map[int]models.MonitorControl)
 
@@ -19,6 +31,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 		websites, err := database.GetAllWebsites(ctx, db)
 		if err != nil {
 			log.Printf("[ERRO] failed to fetch websites: %v", err)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 
@@ -29,13 +42,11 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 
 			existingMonitor, exists := monitoringMap[site.ID]
 
-			if exists {
-				if existingMonitor.Data.URL != site.URL || existingMonitor.Data.Interval != site.Interval {
-					log.Printf("[INFO] Change detected for %s", site.URL)
-					existingMonitor.Cancel()
-					delete(monitoringMap, site.ID)
-					exists = false
-				}
+			if exists && hasConfigChanged(existingMonitor.Data, *site)  {
+				existingMonitor.Cancel()
+				delete(monitoringMap, site.ID)
+				log.Printf("[INFO] configuration changed for %s, restarting monitor", site.URL)
+				exists = false
 			}
 
 			if !exists {
