@@ -12,6 +12,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type MonitorControl struct {
+	Cancel context.CancelFunc
+	Data   models.Website
+}
+
 func hasConfigChanged(current, new models.Website) bool {
 	if current.URL != new.URL {
 		return true
@@ -25,7 +30,7 @@ func hasConfigChanged(current, new models.Website) bool {
 }
 
 func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
-	monitoringMap := make(map[int]models.MonitorControl)
+	monitoringMap := make(map[int]MonitorControl)
 
 	for {
 		websites, err := database.GetAllWebsites(ctx, db)
@@ -42,7 +47,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 
 			existingMonitor, exists := monitoringMap[site.ID]
 
-			if exists && hasConfigChanged(existingMonitor.Data, *site)  {
+			if exists && hasConfigChanged(existingMonitor.Data, *site) {
 				existingMonitor.Cancel()
 				delete(monitoringMap, site.ID)
 				log.Printf("[INFO] configuration changed for %s", site.URL)
@@ -52,7 +57,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 			if !exists {
 				siteCtx, cancel := context.WithCancel(ctx)
 
-				monitoringMap[site.ID] = models.MonitorControl{
+				monitoringMap[site.ID] = MonitorControl{
 					Cancel: cancel,
 					Data:   *site,
 				}

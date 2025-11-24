@@ -1,7 +1,6 @@
 package models
 
 import (
-	"context"
 	"time"
 )
 
@@ -26,9 +25,4 @@ type CheckLog struct {
 	WebsiteID int       `json:"website_id"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
-}
-
-type MonitorControl struct {
-	Cancel context.CancelFunc
-	Data Website
 }
