@@ -9,7 +9,8 @@ import (
 )
 
 func GetAllWebsites(ctx context.Context, db *pgxpool.Pool) ([]*models.Website, error) {
-	rows, _ := db.Query(ctx, "SELECT id, user_id, url, interval, last_checked, last_status FROM websites")
+	query := `SELECT id, user_id, url, interval, last_checked, last_status FROM websites`
+	rows, _ := db.Query(ctx, query)
 
 	websites, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.Website])
 

@@ -46,19 +46,34 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 
 	CREATE TABLE IF NOT EXISTS websites (
 		id SERIAL PRIMARY KEY,
-		user_id INTEGER REFERENCES users(id),
+		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 		url VARCHAR(255) NOT NULL,
 		interval INTERVAL NOT NULL,
 		last_checked TIMESTAMP,
 		last_status VARCHAR(50) NOT NULL DEFAULT 'UNKNOWN'
+
+		UNIQUE(user_id, url)
 	);
 
 	CREATE TABLE IF NOT EXISTS check_logs (
 		id SERIAL PRIMARY KEY,
-		website_id INTEGER REFERENCES websites(id),
+		website_id INTEGER REFERENCES websites(id) ON DELETE CASCADE,
 		status VARCHAR(50) NOT NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
+
+	CREATE TABLE IF NOT EXISTS dns_monitors (
+		id SERIAL PRIMARY KEY,
+		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+		domain VARCHAR(255) NOT NULL,
+		last_a_records JSONB,
+		last_aaaa_records JSONB,
+		last_mx_records JSONB,
+		last_ns_records JSONB,
+		last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+		UNIQUE(user_id, domain)
+	)
 	`
 
 	_, err := pool.Exec(ctx, query)

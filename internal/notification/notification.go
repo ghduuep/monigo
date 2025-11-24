@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func SendEmailNotification(userEmail string, url string, status string) error {
+func SendEmailNotification(userEmail, domain, subject, message string) error {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Cannot load .env file.")
 	}
@@ -17,9 +17,9 @@ func SendEmailNotification(userEmail string, url string, status string) error {
 
 	to := []string{userEmail}
 	msg := []byte("To:" + userEmail + "\r\n" +
-		"Subject: Your server status has changed\r\n" +
+		"Subject:" + subject + "\r\n" +
 		"\r\n" +
-		"The status of " + url + " has changed to " + status + ".\r\n")
+		message + ".\r\n")
 
 	return smtp.SendMail(os.Getenv("EMAIL_SMTP_SERVER")+":"+os.Getenv("EMAIL_SMTP_PORT"), auth, os.Getenv("EMAIL_SENDER"), to, msg)
 }

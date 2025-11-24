@@ -24,7 +24,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go monitor.StartMonitoring(ctx, db)
+	go monitor.StartHttpMonitoring(ctx, db)
+	go monitor.StartDNSMonitoring(ctx, db)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

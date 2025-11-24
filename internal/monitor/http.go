@@ -29,7 +29,7 @@ func hasConfigChanged(current, new models.Website) bool {
 	return false
 }
 
-func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
+func StartHttpMonitoring(ctx context.Context, db *pgxpool.Pool) {
 	monitoringMap := make(map[int]MonitorControl)
 
 	for {
@@ -97,13 +97,13 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 			if err != nil {
 				log.Printf("[ERRO] failed to get user email for %s: %v", site.URL, err)
 			} else {
-				go func(userEmail, url, status string) {
-					if err := notification.SendEmailNotification(userEmail, url, status); err != nil {
+				go func(userEmail, url, subject, message string) {
+					if err := notification.SendEmailNotification(userEmail, url, subject, message); err != nil {
 						log.Printf("[ERRO] failed to send email to %s for %s: %v", userEmail, url, err)
 					} else {
-						log.Printf("[INFO] sent email to %s for %s: %s", userEmail, url, status)
+						log.Printf("[INFO] sent email to %s for %s: %s", userEmail, url, message)
 					}
-				}(userEmail, site.URL, newStatus)
+				}(userEmail, site.URL, site.URL + "is " + newStatus, "The status of "+site.URL+" has changed to "+newStatus+".")
 			}
 
 			if err = database.CreateLog(ctx, db, site.ID, newStatus); err != nil {
