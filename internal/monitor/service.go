@@ -45,7 +45,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 			if exists && hasConfigChanged(existingMonitor.Data, *site)  {
 				existingMonitor.Cancel()
 				delete(monitoringMap, site.ID)
-				log.Printf("[INFO] configuration changed for %s, restarting monitor", site.URL)
+				log.Printf("[INFO] configuration changed for %s", site.URL)
 				exists = false
 			}
 
