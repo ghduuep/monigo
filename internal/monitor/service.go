@@ -13,7 +13,7 @@ import (
 )
 
 func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
-	monitoringMap := make(map[int]context.CancelFunc)
+	monitoringMap := make(map[int]models.MonitorControl)
 
 	for {
 		websites, err := database.GetAllWebsites(ctx, db)
@@ -22,12 +22,40 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 			continue
 		}
 
+		validIds := make(map[int]bool)
+
 		for _, site := range websites {
-			if _, ok := monitoringMap[site.ID]; !ok {
-				ctx, cancel := context.WithCancel(ctx)
-				monitoringMap[site.ID] = cancel
-				go monitor(ctx, db, site)
+			validIds[site.ID] = true
+
+			existingMonitor, exists := monitoringMap[site.ID]
+
+			if exists {
+				if existingMonitor.Data.URL != site.URL || existingMonitor.Data.Interval != site.Interval {
+					log.Printf("[INFO] Change detected for %s", site.URL)
+					existingMonitor.Cancel()
+					delete(monitoringMap, site.ID)
+					exists = false
+				}
+			}
+
+			if !exists {
+				siteCtx, cancel := context.WithCancel(ctx)
+
+				monitoringMap[site.ID] = models.MonitorControl{
+					Cancel: cancel,
+					Data:   *site,
+				}
+
+				go monitor(siteCtx, db, site)
 				log.Printf("[INFO] started monitoring %s", site.URL)
+			}
+		}
+
+		for id, control := range monitoringMap {
+			if _, ok := validIds[id]; !ok {
+				control.Cancel()
+				delete(monitoringMap, id)
+				log.Printf("[INFO] stopped monitoring website ID %d", id)
 			}
 		}
 		time.Sleep(1 * time.Minute)
