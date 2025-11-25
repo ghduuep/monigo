@@ -9,7 +9,7 @@ import (
 )
 
 func GetAllDNSMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.DNSMonitor, error) {
-	query := `SELECT id, domain, last_a_records, last_aaaa_records, last_mx_records, last_ns_records, last_checked FROM dns_monitors`
+	query := `SELECT id, domain, interval, last_a_records, last_aaaa_records, last_mx_records, last_ns_records, last_checked FROM dns_monitors`
 	rows, _ := db.Query(ctx, query)
 
 	dnsMonitors, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.DNSMonitor])
@@ -18,9 +18,9 @@ func GetAllDNSMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.DNSMoni
 }
 
 func CreateDNSMonitor(ctx context.Context, db *pgxpool.Pool, dnsMonitor *models.DNSMonitor) error {
-	query := `INSERT INTO dns_monitors (domain, last_a_records, last_aaaa_records, last_mx_records, last_ns_records, last_checked) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	query := `INSERT INTO dns_monitors (domain, interval, last_a_records, last_aaaa_records, last_mx_records, last_ns_records, last_checked) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 
-	err := db.QueryRow(ctx, query, dnsMonitor.Domain, dnsMonitor.LastA, dnsMonitor.LastAAAA, dnsMonitor.LastMX, dnsMonitor.LastNS, dnsMonitor.LastChecked).Scan(&dnsMonitor.ID)
+	err := db.QueryRow(ctx, query, dnsMonitor.Domain, dnsMonitor.Interval, dnsMonitor.LastA, dnsMonitor.LastAAAA, dnsMonitor.LastMX, dnsMonitor.LastNS, dnsMonitor.LastChecked).Scan(&dnsMonitor.ID)
 
 	return err
 }

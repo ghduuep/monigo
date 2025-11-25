@@ -13,29 +13,62 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+type DNSMonitorControl struct {
+	Cancel context.CancelFunc
+	Data  models.DNSMonitor
+}
+
 func StartDNSMonitoring(ctx context.Context, db *pgxpool.Pool) {
-	ticker := time.NewTicker(1 * time.Hour)
-	defer ticker.Stop()
+	monitoringMap := make(map[int]DNSMonitorControl)
 
 	for {
 		monitors, err := database.GetAllDNSMonitors(ctx, db)
 		if err != nil {
 			log.Printf("[ERROR] Failed to fetch DNS monitors: %v", err)
 		} else {
+			validsIds := make(map[int]bool)
+
 			for _, dnsMonitor := range monitors {
-				go verifyDNS(ctx, db, dnsMonitor)
+				validsIds[dnsMonitor.ID] = true
+
+				existingMonitor, exists := monitoringMap[dnsMonitor.ID]
+
+				if exists && hasDNSConfigChanged(existingMonitor.Data, *dnsMonitor) {
+					existingMonitor.Cancel()
+					delete(monitoringMap, dnsMonitor.ID)
+					log.Printf("[INFO] Configuration changed for domain: %s", dnsMonitor.Domain)
+					exists = false
+				}
+
+				if !exists {
+					monitorCtx, cancel := context.WithCancel(ctx)
+
+					monitoringMap[dnsMonitor.ID] = DNSMonitorControl{
+						Cancel: cancel,
+						Data:  *dnsMonitor,
+					}
+					go verifyDNS(monitorCtx, db, dnsMonitor)
+					log.Printf("[INFO] Started DNS monitoring for domain: %s", dnsMonitor.Domain)
+				}
+			}
+
+			for id, control := range monitoringMap {
+				if !validsIds[id] {
+					control.Cancel()
+					delete(monitoringMap, id)
+					log.Printf("[INFO] Stopped DNS monitoring for domain: %s", control.Data.Domain)
+				}
 			}
 		}
-		select {
-			case<-ctx.Done():
-				return
-			case<-ticker.C:
-				continue
-		}
+		time.Sleep(1 * time.Minute)
 	}
 }
 
 func verifyDNS(ctx context.Context, db *pgxpool.Pool, dnsMonitor *models.DNSMonitor) {
+	ticker := time.NewTicker(dnsMonitor.Interval)
+	defer ticker.Stop()
+
+	for {
 	a, aaaa, mx, ns := getDNSRecords(dnsMonitor.Domain)
 
 	changed := isDifferent(dnsMonitor.LastA, a) || isDifferent(dnsMonitor.LastAAAA, aaaa) || isDifferent(dnsMonitor.LastMX, mx) || isDifferent(dnsMonitor.LastNS, ns)
@@ -47,6 +80,11 @@ func verifyDNS(ctx context.Context, db *pgxpool.Pool, dnsMonitor *models.DNSMoni
 		if err != nil {
 			log.Printf("[ERROR] Failed to update DNS monitor records for domain %s: %v", dnsMonitor.Domain, err)
 			return
+		} else {
+			dnsMonitor.LastA = a
+			dnsMonitor.LastAAAA = aaaa
+			dnsMonitor.LastMX = mx
+			dnsMonitor.LastNS = ns
 		}
 
 		userEmail, err := database.GetUserEmail(ctx, db, dnsMonitor.UserID)
@@ -57,7 +95,14 @@ func verifyDNS(ctx context.Context, db *pgxpool.Pool, dnsMonitor *models.DNSMoni
 		go func(userEmail, domain, subject, message string) {
 			notification.SendEmailNotification(userEmail, subject, domain, message)
 		}(userEmail, dnsMonitor.Domain, dnsMonitor.Domain + "DNS records update", "The DNS records for "+dnsMonitor.Domain+" have changed.")
+	}
 
+	select {
+		case <-ctx.Done():
+		return
+		case <-ticker.C:
+		continue
+	}
 	}
 }
 
@@ -97,6 +142,13 @@ func isDifferent(old, newRecords []string) bool{
 		if old[i] != newRecords[i] {
 			return true
 		}
+	}
+	return false
+}
+
+func hasDNSConfigChanged(old, new models.DNSMonitor) bool {
+	if old.Domain != new.Domain || old.Interval != new.Interval {
+		return true
 	}
 	return false
 }

@@ -48,7 +48,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 		url VARCHAR(255) NOT NULL,
-		interval INTERVAL NOT NULL,
+		interval INTERVAL NOT NULL DEFAULT '5 minutes',
 		last_checked TIMESTAMP,
 		last_status VARCHAR(50) NOT NULL DEFAULT 'UNKNOWN'
 
@@ -66,6 +66,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 		domain VARCHAR(255) NOT NULL,
+		interval INTERVAL NOT NULL DEFAULT '1 hour',
 		last_a_records JSONB,
 		last_aaaa_records JSONB,
 		last_mx_records JSONB,

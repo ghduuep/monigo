@@ -31,6 +31,7 @@ type DNSMonitor struct {
 	ID          int        `json:"id"`
 	UserID 	int        `json:"user_id"`
 	Domain string    `json:"domain"`
+	Interval time.Duration `json:"interval"`
 	LastA  []string `json:"last_a_records"`
 	LastAAAA []string `json:"last_aaaa_records"`
 	LastMX []string `json:"last_mx_records"`
