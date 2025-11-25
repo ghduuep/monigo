@@ -103,10 +103,10 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 					} else {
 						log.Printf("[INFO] sent email to %s for %s: %s", userEmail, url, message)
 					}
-				}(userEmail, site.URL, site.URL + "is " + newStatus, "The status of "+site.URL+" has changed to "+newStatus+".")
+				}(userEmail, site.URL, site.URL+"is "+newStatus, "The status of "+site.URL+" has changed to "+newStatus+".")
 			}
 
-			if err = database.CreateLog(ctx, db, site.ID, newStatus); err != nil {
+			if err = database.CreateUptimeLog(ctx, db, site.ID, newStatus); err != nil {
 				log.Printf("[ERRO] failed to create log for %s: %v", site.URL, err)
 			}
 

@@ -55,13 +55,6 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		UNIQUE(user_id, url)
 	);
 
-	CREATE TABLE IF NOT EXISTS check_logs (
-		id SERIAL PRIMARY KEY,
-		website_id INTEGER REFERENCES websites(id) ON DELETE CASCADE,
-		status VARCHAR(50) NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
 	CREATE TABLE IF NOT EXISTS dns_monitors (
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -74,6 +67,20 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
 		UNIQUE(user_id, domain)
+	)
+
+	CREATE TABLE IF NOT EXISTS uptime_logs (
+		id SERIAL PRIMARY KEY,
+		website_id INTEGER REFERENCES websites(id) ON DELETE CASCADE,
+		status VARCHAR(50) NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS dns_logs (
+		id SERIAL PRIMARY KEY,
+		dns_monitor_id INTEGER REFERENCES dns_monitors(id) ON DELETE CASCADE,
+		diff JSONB,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	)
 	`
 
