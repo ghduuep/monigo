@@ -24,6 +24,7 @@ type UptimeLog struct {
 	ID        int       `json:"id"`
 	WebsiteID int       `json:"website_id"`
 	Status    string    `json:"status"`
+	RootCause string    `json:"root_cause"`
 	CreatedAt time.Time `json:"created_at"`
 }
 

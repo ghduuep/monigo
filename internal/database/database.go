@@ -73,6 +73,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		id SERIAL PRIMARY KEY,
 		website_id INTEGER REFERENCES websites(id) ON DELETE CASCADE,
 		status VARCHAR(50) NOT NULL,
+		root_cause VARCHAR(255),
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
 

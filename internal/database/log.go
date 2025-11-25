@@ -6,10 +6,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func CreateUptimeLog(ctx context.Context, db *pgxpool.Pool, websiteID int, status string) error {
-	query := `INSERT INTO uptime_logs (website_id, status) VALUES ($1, $2)`
+func CreateUptimeLog(ctx context.Context, db *pgxpool.Pool, websiteID int, status string, rootCause string) error {
+	query := `INSERT INTO uptime_logs (website_id, status, root_cause) VALUES ($1, $2, 3$)`
 
-	_, err := db.Exec(ctx, query, websiteID, status)
+	_, err := db.Exec(ctx, query, websiteID, status, rootCause)
 
 	return err
 }

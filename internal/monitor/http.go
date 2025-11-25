@@ -83,11 +83,10 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 	defer ticker.Stop()
 
 	for {
-		newStatus, err := checkSite(site.URL)
+		newStatus, rootCause, err := checkSite(site.URL)
 		log.Printf("[INFO] checked %s: %s", site.URL, newStatus)
 		if err != nil {
 			log.Printf("[ERRO] %s: %v", site.URL, err)
-			newStatus = "DOWN"
 		}
 
 		if site.LastStatus != newStatus || site.LastStatus == "UNKNOWN" {
@@ -103,10 +102,10 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 					} else {
 						log.Printf("[INFO] sent email to %s for %s: %s", userEmail, url, message)
 					}
-				}(userEmail, site.URL, site.URL+"is "+newStatus, "The status of "+site.URL+" has changed to "+newStatus+".")
+				}(userEmail, site.URL, site.URL+"is "+newStatus, "The status of "+site.URL+" has changed to "+newStatus+". Root Cause: "+rootCause)
 			}
 
-			if err = database.CreateUptimeLog(ctx, db, site.ID, newStatus); err != nil {
+			if err = database.CreateUptimeLog(ctx, db, site.ID, newStatus, rootCause); err != nil {
 				log.Printf("[ERRO] failed to create log for %s: %v", site.URL, err)
 			}
 
@@ -126,21 +125,21 @@ func monitor(ctx context.Context, db *pgxpool.Pool, site *models.Website) {
 	}
 }
 
-func checkSite(url string) (string, error) {
+func checkSite(url string) (string, string, error) {
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}
 
 	resp, err := client.Get(url)
 	if err != nil {
-		return "DOWN", err
+		return "DOWN", "Connection Refused", err
 	}
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return "UP", nil
+	if resp.StatusCode >= 200 && resp.StatusCode < 500 {
+		return "UP", resp.Status, nil
 	}
 
-	return "DOWN", nil
+	return "DOWN", resp.Status, nil
 }
