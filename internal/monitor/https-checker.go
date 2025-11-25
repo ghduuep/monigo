@@ -7,7 +7,7 @@ import (
 	"github.com/ghduuep/pingly/internal/models"
 )
 
-func checkHTTP(m *models.Monitor) models.CheckResult {
+func checkHTTP(m models.Monitor) models.CheckResult {
 	client := http.Client{
 		Timeout: 10 * time.Second,
 	}

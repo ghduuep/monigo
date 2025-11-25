@@ -32,16 +32,7 @@ func CreateMonitor(ctx context.Context, db *pgxpool.Pool, monitor *models.Monito
 	return nil
 }
 
-func CreateCheckResult(ctx context.Context, db *pgxpool.Pool, result *models.CheckResult) error {
-	query := `INSERT INTO check_results (monitor_id, status, status_code, latency_ms, created_at) VALUES ($1, $2, $3, $4, NOW()) RETURNING id`
-	err := db.QueryRow(ctx, query, result.MonitorID, result.Status, result.StatusCode, result.Latency).Scan(&result.ID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func UpdateMonitorStatus(ctx context.Context, db *pgxpool.Pool, monitorID int64, status string) error {
+func UpdateMonitorStatus(ctx context.Context, db *pgxpool.Pool, monitorID int, status string) error {
 	query := `UPDATE monitors SET last_check_status = $1, last_check_at = NOW() WHERE id = $2`
 	_, err := db.Exec(ctx, query, status, monitorID)
 	if err != nil {
