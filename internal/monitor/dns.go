@@ -25,41 +25,43 @@ func StartDNSMonitoring(ctx context.Context, db *pgxpool.Pool) {
 		monitors, err := database.GetAllDNSMonitors(ctx, db)
 		if err != nil {
 			log.Printf("[ERROR] Failed to fetch DNS monitors: %v", err)
-		} else {
-			validsIds := make(map[int]bool)
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		validsIds := make(map[int]bool)
 
-			for _, dnsMonitor := range monitors {
-				validsIds[dnsMonitor.ID] = true
+		for _, dnsMonitor := range monitors {
+			validsIds[dnsMonitor.ID] = true
 
-				existingMonitor, exists := monitoringMap[dnsMonitor.ID]
+			existingMonitor, exists := monitoringMap[dnsMonitor.ID]
 
-				if exists && hasDNSConfigChanged(existingMonitor.Data, *dnsMonitor) {
-					existingMonitor.Cancel()
-					delete(monitoringMap, dnsMonitor.ID)
-					log.Printf("[INFO] Configuration changed for domain: %s", dnsMonitor.Domain)
-					exists = false
-				}
-
-				if !exists {
-					monitorCtx, cancel := context.WithCancel(ctx)
-
-					monitoringMap[dnsMonitor.ID] = DNSMonitorControl{
-						Cancel: cancel,
-						Data:  *dnsMonitor,
-					}
-					go verifyDNS(monitorCtx, db, dnsMonitor)
-					log.Printf("[INFO] Started DNS monitoring for domain: %s", dnsMonitor.Domain)
-				}
+			if exists && hasDNSConfigChanged(existingMonitor.Data, *dnsMonitor) {
+				existingMonitor.Cancel()
+				delete(monitoringMap, dnsMonitor.ID)
+				log.Printf("[INFO] Configuration changed for domain: %s", dnsMonitor.Domain)
+				exists = false
 			}
 
-			for id, control := range monitoringMap {
-				if !validsIds[id] {
-					control.Cancel()
-					delete(monitoringMap, id)
-					log.Printf("[INFO] Stopped DNS monitoring for domain: %s", control.Data.Domain)
+			if !exists {
+				monitorCtx, cancel := context.WithCancel(ctx)
+
+				monitoringMap[dnsMonitor.ID] = DNSMonitorControl{
+					Cancel: cancel,
+					Data:  *dnsMonitor,
 				}
+				go verifyDNS(monitorCtx, db, dnsMonitor)
+				log.Printf("[INFO] Started DNS monitoring for domain: %s", dnsMonitor.Domain)
 			}
 		}
+
+		for id, control := range monitoringMap {
+			if !validsIds[id] {
+				control.Cancel()
+				delete(monitoringMap, id)
+				log.Printf("[INFO] Stopped DNS monitoring for domain: %s", control.Data.Domain)
+			}
+		}
+
 		time.Sleep(1 * time.Minute)
 	}
 }
