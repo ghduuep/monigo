@@ -20,11 +20,18 @@ type Website struct {
 	LastChecked *time.Time    `json:"last_checked"`
 }
 
-type CheckLog struct {
+type UptimeLog struct {
 	ID        int       `json:"id"`
 	WebsiteID int       `json:"website_id"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type DNSLog struct {
+	ID          int       `json:"id"`
+	DNSDomainID int       `json:"dns_domain_id"`
+	Diff        string    `json:"diff"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type DNSDomains struct {
