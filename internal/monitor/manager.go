@@ -7,7 +7,6 @@ import (
 
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
-	"github.com/ghduuep/pingly/internal/notification"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -64,17 +63,6 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor) 
 				if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
 					log.Printf("Failed to update monitor %d: %v", m.ID, err)
 				}
-				userEmail, err := database.GetUserEmailByID(ctx, db, m.UserID)
-				if err != nil {
-					log.Printf("Failed to get user email for monitor %d: %v", m.ID, err)
-					continue
-				}
-
-				go func(userEmail, target, subject, message string) {
-				 if err := notification.SendEmailNotification(userEmail, target, subject, message); err != nil {
-						log.Printf("Failed to send notification email to %s for monitor %d: %v", userEmail, m.ID, err)
-					}
-				}(userEmail, m.Target, "Monitor Status Change", result.Message)
 			}
 		}
 	}
