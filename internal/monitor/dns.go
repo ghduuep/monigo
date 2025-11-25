@@ -15,7 +15,7 @@ import (
 
 type DNSMonitorControl struct {
 	Cancel context.CancelFunc
-	Data  models.DNSMonitor
+	Data   models.DNSDomains
 }
 
 func StartDNSMonitoring(ctx context.Context, db *pgxpool.Pool) {
@@ -47,7 +47,7 @@ func StartDNSMonitoring(ctx context.Context, db *pgxpool.Pool) {
 
 				monitoringMap[dnsMonitor.ID] = DNSMonitorControl{
 					Cancel: cancel,
-					Data:  *dnsMonitor,
+					Data:   *dnsMonitor,
 				}
 				go verifyDNS(monitorCtx, db, dnsMonitor)
 				log.Printf("[INFO] Started DNS monitoring for domain: %s", dnsMonitor.Domain)
@@ -66,48 +66,48 @@ func StartDNSMonitoring(ctx context.Context, db *pgxpool.Pool) {
 	}
 }
 
-func verifyDNS(ctx context.Context, db *pgxpool.Pool, dnsMonitor *models.DNSMonitor) {
+func verifyDNS(ctx context.Context, db *pgxpool.Pool, dnsMonitor *models.DNSDomains) {
 	ticker := time.NewTicker(dnsMonitor.Interval)
 	defer ticker.Stop()
 
 	for {
-	a, aaaa, mx, ns, err := getDNSRecords(dnsMonitor.Domain)
-	if err != nil {
-		log.Printf("[ERROR] Failed to get DNS records for domain %s: %v", dnsMonitor.Domain, err)
-	}
-
-	changed := isDifferent(dnsMonitor.LastA, a) || isDifferent(dnsMonitor.LastAAAA, aaaa) || isDifferent(dnsMonitor.LastMX, mx) || isDifferent(dnsMonitor.LastNS, ns)
-
-	if changed {
-		log.Printf("[INFO] DNS records changed for domain %s", dnsMonitor.Domain)
-
-		err := database.UpdateDNSMonitorRecords(ctx, db, dnsMonitor.ID, a, aaaa, mx, ns)
+		a, aaaa, mx, ns, err := getDNSRecords(dnsMonitor.Domain)
 		if err != nil {
-			log.Printf("[ERROR] Failed to update DNS monitor records for domain %s: %v", dnsMonitor.Domain, err)
-			return
-		} else {
-			dnsMonitor.LastA = a
-			dnsMonitor.LastAAAA = aaaa
-			dnsMonitor.LastMX = mx
-			dnsMonitor.LastNS = ns
+			log.Printf("[ERROR] Failed to get DNS records for domain %s: %v", dnsMonitor.Domain, err)
 		}
 
-		userEmail, err := database.GetUserEmail(ctx, db, dnsMonitor.UserID)
-		if err != nil {
-			log.Printf("[ERROR] Failed to get user email for DNS monitor ID %d: %v", dnsMonitor.ID, err)
-			return
-		}
-		go func(userEmail, domain, subject, message string) {
-			notification.SendEmailNotification(userEmail, subject, domain, message)
-		}(userEmail, dnsMonitor.Domain, dnsMonitor.Domain + "DNS records update", "The DNS records for "+dnsMonitor.Domain+" have changed.")
-	}
+		changed := isDifferent(dnsMonitor.LastA, a) || isDifferent(dnsMonitor.LastAAAA, aaaa) || isDifferent(dnsMonitor.LastMX, mx) || isDifferent(dnsMonitor.LastNS, ns)
 
-	select {
+		if changed {
+			log.Printf("[INFO] DNS records changed for domain %s", dnsMonitor.Domain)
+
+			err := database.UpdateDNSMonitorRecords(ctx, db, dnsMonitor.ID, a, aaaa, mx, ns)
+			if err != nil {
+				log.Printf("[ERROR] Failed to update DNS monitor records for domain %s: %v", dnsMonitor.Domain, err)
+				return
+			} else {
+				dnsMonitor.LastA = a
+				dnsMonitor.LastAAAA = aaaa
+				dnsMonitor.LastMX = mx
+				dnsMonitor.LastNS = ns
+			}
+
+			userEmail, err := database.GetUserEmail(ctx, db, dnsMonitor.UserID)
+			if err != nil {
+				log.Printf("[ERROR] Failed to get user email for DNS monitor ID %d: %v", dnsMonitor.ID, err)
+				return
+			}
+			go func(userEmail, domain, subject, message string) {
+				notification.SendEmailNotification(userEmail, subject, domain, message)
+			}(userEmail, dnsMonitor.Domain, dnsMonitor.Domain+"DNS records update", "The DNS records for "+dnsMonitor.Domain+" have changed.")
+		}
+
+		select {
 		case <-ctx.Done():
-		return
+			return
 		case <-ticker.C:
-		continue
-	}
+			continue
+		}
 	}
 }
 
@@ -151,7 +151,7 @@ func getDNSRecords(domain string) (a, aaaa, mx, ns []string, err error) {
 	return
 }
 
-func isDifferent(old, newRecords []string) bool{
+func isDifferent(old, newRecords []string) bool {
 	if len(old) != len(newRecords) {
 		return true
 	}
@@ -163,7 +163,7 @@ func isDifferent(old, newRecords []string) bool{
 	return false
 }
 
-func hasDNSConfigChanged(old, new models.DNSMonitor) bool {
+func hasDNSConfigChanged(old, new models.DNSDomains) bool {
 	if old.Domain != new.Domain || old.Interval != new.Interval {
 		return true
 	}

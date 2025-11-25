@@ -27,14 +27,14 @@ type CheckLog struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type DNSMonitor struct {
-	ID          int        `json:"id"`
-	UserID 	int        `json:"user_id"`
-	Domain string    `json:"domain"`
-	Interval time.Duration `json:"interval"`
-	LastA  []string `json:"last_a_records"`
-	LastAAAA []string `json:"last_aaaa_records"`
-	LastMX []string `json:"last_mx_records"`
-	LastNS []string `json:"last_ns_records"`
-	LastChecked time.Time  `json:"checked_at"`
+type DNSDomains struct {
+	ID          int           `json:"id"`
+	UserID      int           `json:"user_id"`
+	Domain      string        `json:"domain"`
+	Interval    time.Duration `json:"interval"`
+	LastA       []string      `json:"last_a_records"`
+	LastAAAA    []string      `json:"last_aaaa_records"`
+	LastMX      []string      `json:"last_mx_records"`
+	LastNS      []string      `json:"last_ns_records"`
+	LastChecked time.Time     `json:"checked_at"`
 }

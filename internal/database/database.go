@@ -55,7 +55,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		UNIQUE(user_id, url)
 	);
 
-	CREATE TABLE IF NOT EXISTS dns_monitors (
+	CREATE TABLE IF NOT EXISTS dns_domains(
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 		domain VARCHAR(255) NOT NULL,
