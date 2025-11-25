@@ -69,7 +69,10 @@ func verifyDNS(ctx context.Context, db *pgxpool.Pool, dnsMonitor *models.DNSMoni
 	defer ticker.Stop()
 
 	for {
-	a, aaaa, mx, ns := getDNSRecords(dnsMonitor.Domain)
+	a, aaaa, mx, ns, err := getDNSRecords(dnsMonitor.Domain)
+	if err != nil {
+		log.Printf("[ERROR] Failed to get DNS records for domain %s: %v", dnsMonitor.Domain, err)
+	}
 
 	changed := isDifferent(dnsMonitor.LastA, a) || isDifferent(dnsMonitor.LastAAAA, aaaa) || isDifferent(dnsMonitor.LastMX, mx) || isDifferent(dnsMonitor.LastNS, ns)
 
@@ -106,8 +109,12 @@ func verifyDNS(ctx context.Context, db *pgxpool.Pool, dnsMonitor *models.DNSMoni
 	}
 }
 
-func getDNSRecords(domain string) (a, aaaa, mx, ns []string) {
-	ips, _ := net.LookupIP(domain)
+func getDNSRecords(domain string) (a, aaaa, mx, ns []string, err error) {
+	ips, err := net.LookupIP(domain)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	for _, ip := range ips {
 		if ip.To4() != nil {
 			a = append(a, ip.String())
@@ -116,12 +123,20 @@ func getDNSRecords(domain string) (a, aaaa, mx, ns []string) {
 		}
 	}
 
-	mxRecords, _ := net.LookupMX(domain)
+	mxRecords, err := net.LookupMX(domain)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	for _, mxRecord := range mxRecords {
 		mx = append(mx, mxRecord.Host)
 	}
 
-	nsRecords, _ := net.LookupNS(domain)
+	nsRecords, err := net.LookupNS(domain)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	for _, nsRecord := range nsRecords {
 		ns = append(ns, nsRecord.Host)
 	}
