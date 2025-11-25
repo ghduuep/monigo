@@ -9,6 +9,7 @@ import (
 )
 
 func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
+
 }
 
 func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m *models.Monitor) {

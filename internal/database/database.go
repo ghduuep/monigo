@@ -39,52 +39,39 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 	query := `
 	CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
-		email VARCHAR(255) UNIQUE NOT NULL,
-		password_hash VARCHAR(255) NOT NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		email TEXT UNIQUE NOT NULL,
+		password_hash TEXT NOT NULL,
+		created_at TIMESTAMPTZ DEFAULT NOW()
 	);
 
-	CREATE TABLE IF NOT EXISTS websites (
+
+	CREATE TABLE IF NOT EXISTS monitors (
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-		url VARCHAR(255) NOT NULL,
-		interval INTERVAL NOT NULL DEFAULT '5 minutes',
-		last_checked TIMESTAMP,
-		last_status VARCHAR(50) NOT NULL DEFAULT 'UNKNOWN',
+		target TEXT NOT NULL,
+		type VARCHAR(10) NOT NULL,
+		expected_value TEXT,
+		interval INTERVAL NOT NULL,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 
-		UNIQUE(user_id, url)
+		last_check_status VARCHAR(10) DEFAULT 'unknown',
+		last_check_at TIMESTAMPTZ
+
+		CONSTRAINT type_check CHECK (type IN ('http', 'dns', 'ping'))
 	);
 
-	CREATE TABLE IF NOT EXISTS dns_domains (
+	CREATE TABLE IF NOT EXISTS check_results (
 		id SERIAL PRIMARY KEY,
-		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-		domain VARCHAR(255) NOT NULL,
-		interval INTERVAL NOT NULL DEFAULT '1 hour',
-		last_a_records JSONB,
-		last_aaaa_records JSONB,
-		last_mx_records JSONB,
-		last_ns_records JSONB,
-		last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		monitor_id INTEGER REFERENCES monitors(id) ON DELETE CASCADE,
+		status VARCHAR(10) NOT NULL,
+		message TEXT,
+		status_code INTEGER,
+		latency_ms INTERVAL,
+		checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-		UNIQUE(user_id, domain)
-	);
-
-	CREATE TABLE IF NOT EXISTS uptime_logs (
-		id SERIAL PRIMARY KEY,
-		website_id INTEGER REFERENCES websites(id) ON DELETE CASCADE,
-		status VARCHAR(50) NOT NULL,
-		root_cause VARCHAR(255),
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS dns_logs (
-		id SERIAL PRIMARY KEY,
-		dns_monitor_id INTEGER REFERENCES dns_domains(id) ON DELETE CASCADE,
-		diff JSONB,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-	);
+		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown'))
+	)
 	`
-
 	_, err := pool.Exec(ctx, query)
 	return err
 }

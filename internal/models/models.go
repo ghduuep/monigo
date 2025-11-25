@@ -34,6 +34,8 @@ type Monitor struct {
 	Type          MonitorType   `json:"type"`
 	ExpectedValue string        `json:"expected_value"`
 	Interval      time.Duration `json:"interval"`
+	LastCheckStatus MonitorStatus `json:"last_check_status"`
+	LastCheckAt   time.Time     `json:"last_check_at"`
 	CreatedAt     time.Time     `json:"created_at"`
 }
 
