@@ -11,38 +11,38 @@ type User struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-type Website struct {
-	ID          int           `json:"id"`
-	UserID      int           `json:"user_id"`
-	URL         string        `json:"url"`
-	Interval    time.Duration `json:"interval"`
-	LastStatus  string        `json:"last_status"`
-	LastChecked *time.Time    `json:"last_checked"`
+type MonitorType string
+
+const (
+	TypeHTTP MonitorType = "http"
+	TypePing MonitorType = "ping"
+	TypeDNS  MonitorType = "dns"
+)
+
+type MonitorStatus string
+
+const (
+	StatusUp      MonitorStatus = "up"
+	StatusDown    MonitorStatus = "down"
+	StatusUnknown MonitorStatus = "unknown"
+)
+
+type Monitor struct {
+	ID            int           `json:"id"`
+	UserID        int           `json:"user_id"`
+	Target        string        `json:"target"`
+	Type          MonitorType   `json:"type"`
+	ExpectedValue string        `json:"expected_value"`
+	Interval      time.Duration `json:"interval"`
+	CreatedAt     time.Time     `json:"created_at"`
 }
 
-type UptimeLog struct {
-	ID        int       `json:"id"`
-	WebsiteID int       `json:"website_id"`
-	Status    string    `json:"status"`
-	RootCause string    `json:"root_cause"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type DNSLog struct {
-	ID          int       `json:"id"`
-	DNSDomainID int       `json:"dns_domain_id"`
-	Diff        string    `json:"diff"`
-	CreatedAt   time.Time `json:"created_at"`
-}
-
-type DNSDomains struct {
-	ID          int           `json:"id"`
-	UserID      int           `json:"user_id"`
-	Domain      string        `json:"domain"`
-	Interval    time.Duration `json:"interval"`
-	LastA       []string      `json:"last_a_records"`
-	LastAAAA    []string      `json:"last_aaaa_records"`
-	LastMX      []string      `json:"last_mx_records"`
-	LastNS      []string      `json:"last_ns_records"`
-	LastChecked time.Time     `json:"checked_at"`
+type CheckResult struct {
+	ID         int           `json:"id"`
+	MonitorID  int           `json:"monitor_id"`
+	Status     MonitorStatus `json:"status"`
+	Latency    time.Duration `json:"latency"`
+	StatusCode int           `json:"status_code,omitempty"`
+	Message    string        `json:"message,omitempty"`
+	CheckedAt  time.Time     `json:"checked_at"`
 }

@@ -25,7 +25,7 @@ func main() {
 	defer cancel()
 
 	go monitor.StartHttpMonitoring(ctx, db)
-	go monitor.StartDNSMonitoring(ctx, db)
+	//go monitor.StartDNSMonitoring(ctx, db)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
