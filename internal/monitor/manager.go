@@ -72,7 +72,7 @@ func performCheck(m models.Monitor) models.CheckResult {
 	switch m.Type {
 	case models.TypeHTTP:
 		return checkHTTP(m)
-	case models.TypeDNS:
+	case models.TypeDNS_A, models.TypeDNS_AAAA, models.TypeDNS_MX, models.TypeDNS_NS:
 		return checkDNS(m)
 	default:
 		return models.CheckResult{
