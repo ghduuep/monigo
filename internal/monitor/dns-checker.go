@@ -47,7 +47,7 @@ func checkDNS(m models.Monitor) models.CheckResult {
 
 	status := models.StatusUp
 	if m.ExpectedValue != "" && !strings.Contains(result, m.ExpectedValue) {
-		status = models.StatusDown
+		status = models.StatusChanged
 		result = fmt.Sprint("DNS Record has changed\nExpected: %s\nObtained: %s", m.ExpectedValue, result)
 	}
 
