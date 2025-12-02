@@ -47,7 +47,19 @@ func checkDNS(m models.Monitor) models.CheckResult {
 	}
 
 	if err != nil {
+		return models.CheckResult{
+			MonitorID: m.ID,
+			Status:    models.StatusDown,
+			Message:   "Cannot get the dns records",
+			CheckedAt: time.Now(),
+		}
+	}
 
+	return models.CheckResult{
+		MonitorID: m.ID,
+		Status:    models.StatusUp,
+		Message:   resultString,
+		CheckedAt: time.Now(),
 	}
 }
 

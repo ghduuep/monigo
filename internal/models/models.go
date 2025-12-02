@@ -16,10 +16,10 @@ type User struct {
 type MonitorType string
 
 const (
-	TypeHTTP     MonitorType = "http"
-	TypePing     MonitorType = "ping"
-	TypeDNS MonitorType = "dns"
-}
+	TypeHTTP MonitorType = "http"
+	TypePing MonitorType = "ping"
+	TypeDNS  MonitorType = "dns"
+)
 
 type MonitorStatus string
 
@@ -30,15 +30,15 @@ const (
 )
 
 type Monitor struct {
-	ID              int           `json:"id"`
-	UserID          int           `json:"user_id"`
-	Target          string        `json:"target"`
-	Type            MonitorType   `json:"type"`
-	Config json.RawMessage `json:"config"`
-	Interval        time.Duration `json:"interval"`
-	LastCheckStatus MonitorStatus `json:"last_check_status"`
-	LastCheckAt     time.Time     `json:"last_check_at"`
-	CreatedAt       time.Time     `json:"created_at"`
+	ID              int             `json:"id"`
+	UserID          int             `json:"user_id"`
+	Target          string          `json:"target"`
+	Type            MonitorType     `json:"type"`
+	Config          json.RawMessage `json:"config"`
+	Interval        time.Duration   `json:"interval"`
+	LastCheckStatus MonitorStatus   `json:"last_check_status"`
+	LastCheckAt     time.Time       `json:"last_check_at"`
+	CreatedAt       time.Time       `json:"created_at"`
 }
 
 type CheckResult struct {
@@ -52,6 +52,6 @@ type CheckResult struct {
 }
 
 type DNSConfig struct {
-	RecordType string `json:"record_type"`
+	RecordType    string `json:"record_type"`
 	ExpectedValue string `json:"expected_value"`
 }
