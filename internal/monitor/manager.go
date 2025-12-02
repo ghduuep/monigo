@@ -7,10 +7,11 @@ import (
 
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
+	"github.com/ghduuep/pingly/internal/notification"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
+func StartMonitoring(ctx context.Context, db *pgxpool.Pool emailService *notification.EmailService) {
 	activeMonitors := make(map[int]context.CancelFunc)
 
 	for {
@@ -27,7 +28,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 			if _, exists := activeMonitors[m.ID]; !exists {
 				monitorCtx, cancel := context.WithCancel(ctx)
 				activeMonitors[m.ID] = cancel
-				go runMonitorRoutine(monitorCtx, db, *m)
+				go runMonitorRoutine(monitorCtx, db, *m, emailService *notification.EmailService)
 				log.Printf("Started monitoring for monitor ID %d", m.ID)
 			}
 		}
@@ -44,7 +45,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool) {
 	}
 }
 
-func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor) {
+func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, emailService *notification.EmailService) {
 	ticker := time.NewTicker(m.Interval)
 	defer ticker.Stop()
 

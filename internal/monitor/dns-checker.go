@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -11,52 +12,42 @@ import (
 )
 
 func checkDNS(m models.Monitor) models.CheckResult {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	var config models.DNSConfig
+	if err := json.Unmarshal(m.Config, &config); err != nil {
+		return models.CheckResult{Status: models.StatusDown, Message: "[ERROR] DNS configuration error."}
+	}
+
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: 5 * time.Second,
+			}
+			return d.DialContext(ctx, network, "8.8.8.8")
+		},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	var result string
+	var resultString string
 	var err error
-	start := time.Now()
 
-	r := net.DefaultResolver
-
-	switch m.Type {
-	case models.TypeDNS_A:
-		result, err = lookupIP(ctx, r, m.Target, "ip4")
-	case models.TypeDNS_AAAA:
-		result, err = lookupIP(ctx, r, m.Target, "ip6")
-	case models.TypeDNS_MX:
-		result, err = lookupMX(ctx, r, m.Target)
-	case models.TypeDNS_NS:
-		result, err = lookupNS(ctx, r, m.Target)
+	switch config.RecordType {
+	case "A":
+		resultString, err = lookupIP(ctx, r, m.Target, "ip4")
+	case "AAAA":
+		resultString, err = lookupIP(ctx, r, m.Target, "ip6")
+	case "MX":
+		resultString, err = lookupMX(ctx, r, m.Target)
+	case "NS":
+		resultString, err = lookupNS(ctx, r, m.Target)
 	default:
-		return models.CheckResult{MonitorID: m.ID, Status: models.StatusDown, Message: "Invalid DNS Type", CheckedAt: time.Now()}
+		return models.CheckResult{Status: models.StatusDown, Message: "[ERROR] Invalid DNS record type."}
 	}
-
-	latency := time.Since(start)
 
 	if err != nil {
-		return models.CheckResult{
-			MonitorID: m.ID,
-			Status:    models.StatusDown,
-			Message:   fmt.Sprintf("Resolution failed: %v", err),
-			Latency:   latency,
-			CheckedAt: time.Now(),
-		}
-	}
 
-	status := models.StatusUp
-	if m.ExpectedValue != "" && !strings.Contains(result, m.ExpectedValue) {
-		status = models.StatusChanged
-		result = fmt.Sprint("DNS Record has changed\nExpected: %s\nObtained: %s", m.ExpectedValue, result)
-	}
-
-	return models.CheckResult{
-		MonitorID: m.ID,
-		Status:    status,
-		Message:   result,
-		Latency:   latency,
-		CheckedAt: time.Now(),
 	}
 }
 

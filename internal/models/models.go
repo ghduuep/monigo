@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -17,18 +18,14 @@ type MonitorType string
 const (
 	TypeHTTP     MonitorType = "http"
 	TypePing     MonitorType = "ping"
-	TypeDNS_A    MonitorType = "dns_a"
-	TypeDNS_AAAA MonitorType = "dns_aaaa"
-	TypeDNS_MX   MonitorType = "dns_mx"
-	TypeDNS_NS   MonitorType = "dns_ns"
-)
+	TypeDNS MonitorType = "dns"
+}
 
 type MonitorStatus string
 
 const (
 	StatusUp      MonitorStatus = "up"
 	StatusDown    MonitorStatus = "down"
-	StatusChanged MonitorStatus = "changed"
 	StatusUnknown MonitorStatus = "unknown"
 )
 
@@ -37,7 +34,7 @@ type Monitor struct {
 	UserID          int           `json:"user_id"`
 	Target          string        `json:"target"`
 	Type            MonitorType   `json:"type"`
-	ExpectedValue   string        `json:"expected_value,omitempty"`
+	Config json.RawMessage `json:"config"`
 	Interval        time.Duration `json:"interval"`
 	LastCheckStatus MonitorStatus `json:"last_check_status"`
 	LastCheckAt     time.Time     `json:"last_check_at"`
@@ -52,4 +49,9 @@ type CheckResult struct {
 	StatusCode int           `json:"status_code,omitempty"`
 	Message    string        `json:"message,omitempty"`
 	CheckedAt  time.Time     `json:"checked_at"`
+}
+
+type DNSConfig struct {
+	RecordType string `json:"record_type"`
+	ExpectedValue string `json:"expected_value"`
 }
