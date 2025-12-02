@@ -51,6 +51,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 		target TEXT NOT NULL,
 		type VARCHAR(10) NOT NULL,
+		dns_record_type VARCHAR(10) NOT NULL,
 		expected_value TEXT,
 		interval INTERVAL NOT NULL,
 		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
