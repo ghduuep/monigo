@@ -9,7 +9,7 @@ import (
 )
 
 func GetAllMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.Monitor, error) {
-	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at FROM monitors`
+	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, created_at FROM monitors`
 	rows, err := db.Query(ctx, query)
 	if err != nil {
 		return nil, err

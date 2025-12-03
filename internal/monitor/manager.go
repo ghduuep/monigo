@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"time"
 
@@ -65,6 +64,13 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 				if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
 					log.Printf("Failed to update monitor %d: %v", m.ID, err)
 				}
+
+				userEmail, err := database.GetUserEmailByID(ctx, db, m.UserID)
+				if err != nil {
+					log.Printf("[ERROR] error getting the user email: %v", err)
+				}
+
+				emailService.SendStatusAlert(userEmail, m, result)
 			}
 		}
 	}

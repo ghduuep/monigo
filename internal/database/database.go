@@ -67,7 +67,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		result_value TEXT,
 		message TEXT,
 		status_code INTEGER,
-		latency_ms INTERVAL,
+		latency_ms INTEGER,
 		checked_at TIMESTAMPTZ DEFAULT NOW(),
 
 		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown'))

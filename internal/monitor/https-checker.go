@@ -15,7 +15,7 @@ func checkHTTP(m models.Monitor) models.CheckResult {
 	start := time.Now()
 
 	resp, err := client.Get(m.Target)
-	latency := time.Since(start)
+	latency := time.Since(start).Milliseconds()
 
 	if err != nil {
 		return models.CheckResult{
@@ -37,6 +37,7 @@ func checkHTTP(m models.Monitor) models.CheckResult {
 		MonitorID:  m.ID,
 		Status:     status,
 		Latency:    latency,
+		Message:    resp.Status,
 		StatusCode: resp.StatusCode,
 		CheckedAt:  time.Now(),
 	}

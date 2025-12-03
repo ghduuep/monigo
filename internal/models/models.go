@@ -37,7 +37,7 @@ type Monitor struct {
 	Config          json.RawMessage `json:"config"`
 	Interval        time.Duration   `json:"interval"`
 	LastCheckStatus MonitorStatus   `json:"last_check_status"`
-	LastCheckAt     time.Time       `json:"last_check_at"`
+	LastCheckAt     *time.Time      `json:"last_check_at"`
 	CreatedAt       time.Time       `json:"created_at"`
 }
 
@@ -45,7 +45,7 @@ type CheckResult struct {
 	ID          int           `json:"id"`
 	MonitorID   int           `json:"monitor_id"`
 	Status      MonitorStatus `json:"status"`
-	Latency     time.Duration `json:"latency_ms,omitempty"`
+	Latency     int64         `json:"latency_ms,omitempty"`
 	StatusCode  int           `json:"status_code,omitempty"`
 	ResultValue string        `json:"result_value,omitempty"`
 	Message     string        `json:"message,omitempty"`
