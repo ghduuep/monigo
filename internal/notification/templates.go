@@ -8,29 +8,21 @@ import (
 
 func (s *EmailService) SendStatusAlert(userEmail string, m models.Monitor, result models.CheckResult) error {
 
-	// Caso 1: Monitoramento HTTP
 	if m.Type == models.TypeHTTP {
 		return s.sendHTTPAlert(userEmail, m, result)
 	}
 
-	// Caso 2 e 3: Monitoramento DNS
 	if m.Type == models.TypeDNS {
-		// Se temos um "ResultValue" preenchido mas o status é DOWN, significa que houve um mismatch (Valor Alterado)
-		// Veja no seu dns-checker.go: ele preenche ResultValue no mismatch, mas não no erro de lookup.
 		if result.Status == models.StatusDown && result.ResultValue != "" {
 			return s.sendDNSChangedAlert(userEmail, m, result) // Caso 3
 		}
 
-		// Se não, é um erro genérico ou mudança de status UP/DOWN padrão
 		return s.sendDNSStatusAlert(userEmail, m, result) // Caso 2
 	}
 
 	return nil
 }
 
-// --- Templates Privados (Helpers) ---
-
-// Template 1: HTTP Status Change
 func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.CheckResult) error {
 	subject := fmt.Sprintf("📡 Monitor HTTP: %s está %s", m.Target, res.Status)
 	color := "#e53e3e" // Vermelho
@@ -48,7 +40,6 @@ func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.Che
 	return s.SendEmail(to, subject, body)
 }
 
-// Template 2: DNS Status Change (Caiu/Voltou ou Erro de Resolução)
 func (s *EmailService) sendDNSStatusAlert(to string, m models.Monitor, res models.CheckResult) error {
 	subject := fmt.Sprintf("⚠️ Falha de DNS: %s", m.Target)
 
@@ -63,13 +54,8 @@ func (s *EmailService) sendDNSStatusAlert(to string, m models.Monitor, res model
 	return s.SendEmail(to, subject, body)
 }
 
-// Template 3: DNS Record Altered (Mudança Crítica de Valor)
 func (s *EmailService) sendDNSChangedAlert(to string, m models.Monitor, res models.CheckResult) error {
 	subject := fmt.Sprintf("🚨 ALERTA CRÍTICO: DNS de %s foi Alterado!", m.Target)
-
-	// O seu dns-checker.go retorna uma mensagem como "Expected 'X', Found 'Y'"
-	// Podemos usar isso ou formatar melhor aqui se tivéssemos os valores separados.
-	// Como o ResultValue tem o valor atual (o "intruso"), vamos destacá-lo.
 
 	body := fmt.Sprintf(`
 		<div style="border: 2px solid red; padding: 15px; background-color: #fff5f5;">
