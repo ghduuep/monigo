@@ -44,14 +44,14 @@ func checkDNS(m models.Monitor) models.CheckResult {
 	case "NS":
 		resultString, err = lookupNS(ctx, r, m.Target)
 	default:
-		return models.CheckResult{Status: models.StatusDown, Message: "[ERROR] Invalid DNS record type."}
+		return models.CheckResult{Status: models.StatusDown, Message: "Invalid DNS record type."}
 	}
 
 	if err != nil {
 		return models.CheckResult{
 			MonitorID: m.ID,
 			Status:    models.StatusDown,
-			Message:   "Cannot get the dns records: " + err.Error(),
+			Message:   fmt.Sprintf("Could not resolve the specified %s record for target %s", config.RecordType, err.Error()),
 			CheckedAt: time.Now(),
 		}
 	}
