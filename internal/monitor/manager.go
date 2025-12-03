@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func StartMonitoring(ctx context.Context, db *pgxpool.Pool emailService *notification.EmailService) {
+func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notification.EmailService) {
 	activeMonitors := make(map[int]context.CancelFunc)
 
 	for {
@@ -28,7 +29,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool emailService *notific
 			if _, exists := activeMonitors[m.ID]; !exists {
 				monitorCtx, cancel := context.WithCancel(ctx)
 				activeMonitors[m.ID] = cancel
-				go runMonitorRoutine(monitorCtx, db, *m, emailService *notification.EmailService)
+				go runMonitorRoutine(monitorCtx, db, *m, emailService)
 				log.Printf("Started monitoring for monitor ID %d", m.ID)
 			}
 		}
@@ -73,7 +74,7 @@ func performCheck(m models.Monitor) models.CheckResult {
 	switch m.Type {
 	case models.TypeHTTP:
 		return checkHTTP(m)
-	case models.TypeDNS_A, models.TypeDNS_AAAA, models.TypeDNS_MX, models.TypeDNS_NS:
+	case models.TypeDNS:
 		return checkDNS(m)
 	default:
 		return models.CheckResult{

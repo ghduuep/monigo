@@ -14,7 +14,7 @@ import (
 func checkDNS(m models.Monitor) models.CheckResult {
 	var config models.DNSConfig
 	if err := json.Unmarshal(m.Config, &config); err != nil {
-		return models.CheckResult{Status: models.StatusDown, Message: "[ERROR] DNS configuration error."}
+		return models.CheckResult{Status: models.StatusDown, Message: "[ERROR] DNS configuration error.", CheckedAt: time.Now()}
 	}
 
 	r := &net.Resolver{
@@ -50,16 +50,29 @@ func checkDNS(m models.Monitor) models.CheckResult {
 		return models.CheckResult{
 			MonitorID: m.ID,
 			Status:    models.StatusDown,
-			Message:   "Cannot get the dns records",
+			Message:   "Cannot get the dns records: " + err.Error(),
 			CheckedAt: time.Now(),
 		}
 	}
 
+	currentValue := strings.TrimSpace(resultString)
+	expectedValue := strings.TrimSpace(config.ExpectedValue)
+
+	if currentValue != expectedValue {
+		return models.CheckResult{
+			MonitorID:   m.ID,
+			Status:      models.StatusDown,
+			Message:     fmt.Sprintf("DNS record mismatch. Expected '%s', Found '%s'", expectedValue, currentValue),
+			ResultValue: currentValue,
+			CheckedAt:   time.Now(),
+		}
+	}
+
 	return models.CheckResult{
-		MonitorID: m.ID,
-		Status:    models.StatusUp,
-		Message:   resultString,
-		CheckedAt: time.Now(),
+		MonitorID:   m.ID,
+		Status:      models.StatusUp,
+		ResultValue: resultString,
+		CheckedAt:   time.Now(),
 	}
 }
 

@@ -42,13 +42,14 @@ type Monitor struct {
 }
 
 type CheckResult struct {
-	ID         int           `json:"id"`
-	MonitorID  int           `json:"monitor_id"`
-	Status     MonitorStatus `json:"status"`
-	Latency    time.Duration `json:"latency"`
-	StatusCode int           `json:"status_code,omitempty"`
-	Message    string        `json:"message,omitempty"`
-	CheckedAt  time.Time     `json:"checked_at"`
+	ID          int           `json:"id"`
+	MonitorID   int           `json:"monitor_id"`
+	Status      MonitorStatus `json:"status"`
+	Latency     time.Duration `json:"latency_ms,omitempty"`
+	StatusCode  int           `json:"status_code,omitempty"`
+	ResultValue string        `json:"result_value,omitempty"`
+	Message     string        `json:"message,omitempty"`
+	CheckedAt   time.Time     `json:"checked_at"`
 }
 
 type DNSConfig struct {
