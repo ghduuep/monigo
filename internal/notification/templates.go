@@ -91,12 +91,11 @@ func (s *EmailService) sendDNSDetectedAlert(to string, m models.Monitor, res mod
 			<ul>
 				<li><strong>Status:</strong> <span style="color: #38a169; font-weight: bold;">UP (Ativo)</span></li>
 				<li><strong>Valor Detectado:</strong> <code>%s</code></li>
-				<li><strong>Mensagem:</strong> %s</li>
 			</ul>
 
 			<p style="font-size: 12px; color: #666;">A partir de agora, avisaremos se esse valor mudar.</p>
 		</div>
-	`, m.Target, res.ResultValue, res.Message)
+	`, m.Target, res.ResultValue)
 
 	return s.SendEmail(to, subject, body)
 }
