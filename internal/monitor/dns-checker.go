@@ -58,6 +58,16 @@ func checkDNS(m models.Monitor) models.CheckResult {
 	currentValue := strings.TrimSpace(resultString)
 	expectedValue := strings.TrimSpace(config.ExpectedValue)
 
+	if expectedValue == "" {
+		return models.CheckResult{
+			MonitorID:   m.ID,
+			Status:      models.StatusUp,
+			ResultValue: currentValue,
+			Message:     "Valores DNS detectados automaticamente.",
+			CheckedAt:   time.Now(),
+		}
+	}
+
 	if currentValue != expectedValue {
 		return models.CheckResult{
 			MonitorID:   m.ID,

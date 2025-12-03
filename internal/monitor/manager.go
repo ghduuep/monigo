@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"time"
 
@@ -54,30 +55,63 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			result := performCheck(m)
-			if err := database.CreateCheckResult(ctx, db, &result); err != nil {
-				log.Printf("Failed to save check result for monitor %d: %v", m.ID, err)
-			}
-			if result.Status != m.LastCheckStatus && result.Status != models.StatusUnknown {
-				log.Printf("Monitor %d status changed from %s to %s", m.ID, m.LastCheckStatus, result.Status)
-				m.LastCheckStatus = result.Status
-				if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
-					log.Printf("Failed to update monitor %d: %v", m.ID, err)
-				}
-
-				userEmail, err := database.GetUserEmailByID(ctx, db, m.UserID)
-				if err != nil {
-					log.Printf("[ERROR] error getting the user email: %v", err)
-				}
-
-				go func(mon models.Monitor, res models.CheckResult) {
-					if err := emailService.SendStatusAlert(userEmail, mon, res); err != nil {
-						log.Printf("[ERROR] sendind email for %s", userEmail)
-					}
-				}(m, result)
-
-			}
+			processCheck(ctx, db, &m, emailService)
 		}
+	}
+}
+
+func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emailService *notification.EmailService) {
+	result := performCheck(*m)
+
+	handleAutoDiscovery(ctx, db, m, result)
+
+	if err := database.CreateCheckResult(ctx, db, &result); err != nil {
+		log.Printf("[ERROR] failed to save check result for monitor %d: %v", m.ID, err)
+	}
+
+	if result.Status != m.LastCheckStatus && result.Status != models.StatusUnknown {
+		log.Printf("[LOG] Monitor %d has changed from %s to %s", m.ID, m.LastCheckStatus, result.Status)
+
+		m.LastCheckStatus = result.Status
+		if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
+			log.Printf("[ERROR] Failed to update monitor %d: %v", m.ID, err)
+		}
+
+		userEmail, _ := database.GetUserEmailByID(ctx, db, m.UserID)
+
+		if userEmail != "" {
+			go func(mon models.Monitor, res models.CheckResult) {
+				if err := emailService.SendStatusAlert(userEmail, mon, res); err != nil {
+					log.Printf("[ERROR] Failed to send e-mail: %v", err)
+				}
+			}(*m, result)
+		}
+	}
+}
+
+func HandleAutoDiscovery(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, res models.CheckResult) {
+	if m.Type != models.TypeDNS || res.Status != models.StatusUp {
+		return
+	}
+
+	var dnsConfig models.DNSConfig
+	if err := json.Unmarshal(m.Config, &dnsConfig); err != nil {
+		return
+	}
+
+	if dnsConfig.ExpectedValue != "" {
+		return
+	}
+
+	log.Printf("[LOG] Auto Discovery: learning value '%s' for monitor %d", res.ResultValue, m.ID)
+
+	dnsConfig.ExpectedValue = res.ResultValue
+	newConfigJson, _ := json.Marshal(dnsConfig)
+
+	m.Config = newConfigJson
+
+	if err := database.UpdateMonitorConfig(ctx, db, m.ID, newConfigJson); err != nil {
+		log.Printf("[ERROR] Failed to save auto config: %v", err)
 	}
 }
 

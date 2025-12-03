@@ -41,6 +41,12 @@ func UpdateMonitorStatus(ctx context.Context, db *pgxpool.Pool, monitorID int, s
 	return nil
 }
 
+func UpdateMonitorConfig(ctx context.Context, db *pgxpool.Pool, monitorID int, newConfig []byte) error {
+	query := `UPDATE monitors SET config = $1 WHERE id = $2`
+	_, err := db.Exec(ctx, query, newConfig, monitorID)
+	return err
+}
+
 func DeleteMonitor(ctx context.Context, db *pgxpool.Pool, monitorID int64) error {
 	query := `DELETE FROM monitors WHERE id = $1`
 	_, err := db.Exec(ctx, query, monitorID)
