@@ -70,7 +70,12 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 					log.Printf("[ERROR] error getting the user email: %v", err)
 				}
 
-				emailService.SendStatusAlert(userEmail, m, result)
+				go func(mon models.Monitor, res models.CheckResult) {
+					if err := emailService.SendStatusAlert(userEmail, mon, res); err != nil {
+						log.Printf("[ERROR] sendind email for %s", userEmail)
+					}
+				}(m, result)
+
 			}
 		}
 	}
