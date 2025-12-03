@@ -51,13 +51,11 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 		target TEXT NOT NULL,
 		type VARCHAR(10) NOT NULL,
-		dns_record_type VARCHAR(10) NOT NULL,
-		expected_value TEXT,
+		config JSONB DEFAULT '{}'::jsonb,
 		interval INTERVAL NOT NULL,
-		created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-
 		last_check_status VARCHAR(10) DEFAULT 'unknown',
-		last_check_at TIMESTAMPTZ
+		last_check_at TIMESTAMPTZ,
+		created_at TIMESTAMPTZ DEFAULT NOW(),
 
 		CONSTRAINT type_check CHECK (type IN ('http', 'dns', 'ping'))
 	);
@@ -66,10 +64,11 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		id SERIAL PRIMARY KEY,
 		monitor_id INTEGER REFERENCES monitors(id) ON DELETE CASCADE,
 		status VARCHAR(10) NOT NULL,
+		result_value TEXT,
 		message TEXT,
 		status_code INTEGER,
 		latency_ms INTERVAL,
-		checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+		checked_at TIMESTAMPTZ DEFAULT NOW(),
 
 		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown'))
 	)
