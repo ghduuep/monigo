@@ -57,7 +57,15 @@ func checkDNS(m models.Monitor) models.CheckResult {
 	}
 
 	currentValue := strings.TrimSpace(resultString)
-	expectedValue := strings.TrimSpace(config.ExpectedValue)
+	expectedParts := strings.Split(config.ExpectedValue, ",")
+
+	for i := range expectedParts {
+		expectedParts[i] = strings.TrimSpace(expectedParts[i])
+	}
+
+	sort.Strings(expectedParts)
+
+	expectedValue := strings.Join(expectedParts, ", ")
 
 	if expectedValue == "" {
 		return models.CheckResult{
