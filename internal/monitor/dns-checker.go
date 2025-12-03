@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"time"
 
@@ -96,6 +97,9 @@ func lookupIP(ctx context.Context, r *net.Resolver, host string, network string)
 	for _, ip := range ips {
 		results = append(results, ip.String())
 	}
+
+	sort.Strings(results)
+
 	return strings.Join(results, ", "), nil
 }
 
@@ -109,6 +113,9 @@ func lookupMX(ctx context.Context, r *net.Resolver, host string) (string, error)
 	for _, mx := range mxs {
 		results = append(results, fmt.Sprintf("%s (%d)", mx.Host, mx.Pref))
 	}
+
+	sort.Strings(results)
+
 	return strings.Join(results, ", "), nil
 }
 
@@ -122,6 +129,8 @@ func lookupNS(ctx context.Context, r *net.Resolver, host string) (string, error)
 	for _, ns := range nss {
 		results = append(results, ns.Host)
 	}
+
+	sort.Strings(results)
 
 	return strings.Join(results, ", "), nil
 }
