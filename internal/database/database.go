@@ -17,19 +17,19 @@ func InitDB() *pgxpool.Pool {
 	pool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 
 	if err != nil {
-		log.Fatalf("Erro ao criar pool: %v", err)
+		log.Fatalf("[ERROR] Failed to create pool: %v", err)
 	}
 
 	if err := pool.Ping(context.Background()); err != nil {
-		log.Fatalf("[ERRO] não foi possível conectar ao banco de dados: %v", err)
+		log.Fatalf("[ERROR] Failed to connect with database: %v", err)
 	}
 
-	log.Println("[INFO] conectado com sucesso ao banco.")
+	log.Println("[INFO] Connected successfuly with database")
 
 	err = createTables(context.Background(), pool)
 
 	if err != nil {
-		log.Fatalf("Erro ao criar tabelas: %v", err)
+		log.Fatalf("[ERROR] Failed to create database tables: %v", err)
 	}
 
 	return pool
