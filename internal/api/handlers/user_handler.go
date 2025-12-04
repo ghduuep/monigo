@@ -13,7 +13,7 @@ func (h *Handler) GetUsers(c echo.Context) error {
 
 	users, err := database.GetAllUsers(c.Request().Context(), h.DB)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get users."})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 
 	var response []dto.UserResponse

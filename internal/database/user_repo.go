@@ -16,7 +16,7 @@ func CreateUser(ctx context.Context, db *pgxpool.Pool, user *models.User) error 
 }
 
 func GetAllUsers(ctx context.Context, db *pgxpool.Pool) ([]models.User, error) {
-	query := `SELECT id, username, email, created_at FROM users`
+	query := `SELECT * FROM users`
 
 	rows, err := db.Query(ctx, query)
 	if err != nil {

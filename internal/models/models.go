@@ -6,11 +6,11 @@ import (
 )
 
 type User struct {
-	ID           int       `json:"id"`
-	Username     string    `json:"username" bindind:"required"`
-	Email        string    `json:"email" bindind:"required,email"`
-	PasswordHash string    `json:"password_hash" bindind:"required,min=6"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           int       `json:"id" db:"id"`
+	Username     string    `json:"username" db:"username"`
+	Email        string    `json:"email" db:"email"`
+	PasswordHash string    `json:"password_hash" db:"password_hash"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 }
 
 type MonitorType string
@@ -30,26 +30,26 @@ const (
 )
 
 type Monitor struct {
-	ID              int             `json:"id"`
-	UserID          int             `json:"user_id"`
-	Target          string          `json:"target"`
-	Type            MonitorType     `json:"type"`
-	Config          json.RawMessage `json:"config"`
-	Interval        time.Duration   `json:"interval"`
-	LastCheckStatus MonitorStatus   `json:"last_check_status"`
-	LastCheckAt     *time.Time      `json:"last_check_at"`
-	CreatedAt       time.Time       `json:"created_at"`
+	ID              int             `json:"id" db:"id"`
+	UserID          int             `json:"user_id" db:"user_id"`
+	Target          string          `json:"target" db:"target"`
+	Type            MonitorType     `json:"type" db:"type"`
+	Config          json.RawMessage `json:"config" db:"config"`
+	Interval        time.Duration   `json:"interval" db:"interval"`
+	LastCheckStatus MonitorStatus   `json:"last_check_status" db:"last_check_status"`
+	LastCheckAt     *time.Time      `json:"last_check_at" db:"last_check_at"`
+	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
 }
 
 type CheckResult struct {
-	ID          int           `json:"id"`
-	MonitorID   int           `json:"monitor_id"`
-	Status      MonitorStatus `json:"status"`
-	Latency     int64         `json:"latency_ms,omitempty"`
-	StatusCode  int           `json:"status_code,omitempty"`
-	ResultValue string        `json:"result_value,omitempty"`
-	Message     string        `json:"message,omitempty"`
-	CheckedAt   time.Time     `json:"checked_at"`
+	ID          int           `json:"id" db:"id"`
+	MonitorID   int           `json:"monitor_id" db:"monitor_id"`
+	Status      MonitorStatus `json:"status" db:"status"`
+	Latency     int64         `json:"latency_ms,omitempty" db:"latency_ms"`
+	StatusCode  int           `json:"status_code,omitempty" db:"status_code"`
+	ResultValue string        `json:"result_value,omitempty" db:"result_value"`
+	Message     string        `json:"message,omitempty" db:"message"`
+	CheckedAt   time.Time     `json:"checked_at" db:"checked_at"`
 }
 
 type DNSConfig struct {
