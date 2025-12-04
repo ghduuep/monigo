@@ -1,9 +1,13 @@
 package main
 
 import (
+	"log"
+
+	"github.com/ghduuep/pingly/internal/api"
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/joho/godotenv"
-	"log"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -14,4 +18,16 @@ func main() {
 	db := database.InitDB()
 	defer db.Close()
 
+	e := echo.New()
+
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+
+	api.SetupRotes(e, db)
+
+	port := ":8080"
+	log.Printf("API server is running on port %s", port)
+	if err := e.Start(port); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
