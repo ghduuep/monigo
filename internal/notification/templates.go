@@ -38,8 +38,8 @@ func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.Che
 	body := fmt.Sprintf(`
 		<h2>Atualização de Status HTTP</h2>
 		<p>O monitor <strong>%s</strong> mudou para <span style="color:%s"><strong>%s</strong></span>.</p>
-		<p><strong>Motivo:</strong> %sms</p>
-		<p><strong>Latência:</strong> %v</p>
+		<p><strong>Motivo:</strong> %s</p>
+		<p><strong>Latência:</strong> %vms</p>
 	`, m.Target, color, res.Status, res.Message, res.Latency)
 
 	return s.SendEmail(to, subject, body)
