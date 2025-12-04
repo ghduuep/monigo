@@ -1,31 +1,37 @@
-# **Pingly**
+# Pingly 📡
 
-O **Pingly** é uma ferramenta robusta de monitorização de websites e registos DNS escrita em Go. O sistema permite que os utilizadores registem websites para verificação periódica de disponibilidade (HTTP) e monitorizem alterações em registos DNS (A, AAAA, MX, NS), enviando notificações por email sempre que ocorrem mudanças de estado ou configuração.
+O **Pingly** é uma ferramenta robusta de monitorização de websites e registos DNS desenvolvida em Go. O sistema permite registar websites para verificação periódica de disponibilidade (HTTP) e monitorizar alterações críticas em registos DNS, notificando os utilizadores por e-mail sempre que ocorrem incidentes ou alterações inesperadas.
 
-## **🚀 Funcionalidades**
+## 🚀 Funcionalidades
 
-* **Monitorização HTTP**: Verifica periodicamente o estado de websites (UP/DOWN).  
-* **Monitorização de DNS**: Acompanha alterações nos registos A, AAAA, MX e NS de domínios.  
-* **Notificações**: Envio automático de emails ao detetar falhas no website ou alterações no DNS.  
-* **API REST**: Gestão de utilizadores e monitores através de uma API segura.  
-* **Autenticação JWT**: Proteção de rotas e gestão de sessões de utilizador.  
-* **Worker Dedicado**: Processamento em *background* para verificações contínuas sem bloquear a API.
+* **Monitorização HTTP**: Verificação periódica de estado (UP/DOWN), medição de latência e análise de códigos de resposta HTTP.
+* **Monitorização de DNS Inteligente**:
+    * Suporte para registos **A**, **AAAA**, **MX** e **NS**.
+    * **Auto-Discovery**: Se não for fornecido um valor esperado, o sistema aprende automaticamente o valor atual do DNS na primeira verificação e passa a monitorizar alterações baseadas nesse valor.
+* **Sistema de Notificações**: Envio automático de e-mails via SMTP para:
+    * Falhas de disponibilidade (Site Down).
+    * Recuperação de serviços (Site Up).
+    * Falhas na resolução de DNS.
+    * Alterações não autorizadas em registos DNS (Hijacking alerts).
+* **Arquitetura Worker-Pool**: Separação clara entre a API (gestão de dados) e o Worker (processamento em *background*) para garantir performance e escalabilidade sem bloquear pedidos HTTP.
+* **API REST**: Interface JSON moderna construída com o framework Echo para gestão de utilizadores e monitores.
 
-## **🛠 Tecnologias Utilizadas**
+## 🛠 Tech Stack
 
-* **Linguagem**: [Go](https://go.dev/) (Golang)  
-* **Base de Dados**: [PostgreSQL](https://www.postgresql.org/)  
-* **Driver BD**: [pgx/v5](https://github.com/jackc/pgx)  
-* **Router HTTP**: [chi](https://github.com/go-chi/chi)  
-* **Autenticação**: [jwtauth](https://github.com/go-chi/jwtauth)  
-* **Containerização**: [Docker](https://www.docker.com/) (para a base de dados)
+* **Linguagem**: [Go 1.25+](https://go.dev/)
+* **Web Framework**: [Echo v4](https://echo.labstack.com/) (High performance, extensible, minimalist Go web framework).
+* **Base de Dados**: PostgreSQL
+* **Driver BD**: [pgx/v5](https://github.com/jackc/pgx) (Driver PostgreSQL de alta performance).
+* **Infraestrutura**: Docker & Docker Compose (Builds *multi-stage* otimizados com Alpine Linux).
 
-## **📂 Estrutura do Projeto**
+## 📂 Estrutura do Projeto
 
-* `cmd/api`: Ponto de entrada para o servidor da API REST.  
-* `cmd/worker`: Ponto de entrada para o worker de monitorização em background.  
-* `internal/api`: Definição de rotas, handlers e middleware.  
-* `internal/database`: Lógica de interação com o PostgreSQL.  
-* `internal/models`: Estruturas de dados (Users, Websites, DNSMonitors).  
-* `internal/monitor`: Lógica principal de verificação HTTP e DNS.  
-* `internal/notification`: Serviço de envio de emails (SMTP).
+A estrutura segue os padrões modernos de projetos Go (Go Standard Project Layout):
+
+* `cmd/api`: Ponto de entrada (`main.go`) para o servidor da API REST.
+* `cmd/worker`: Ponto de entrada (`main.go`) para o serviço de monitorização em background.
+* `internal/api`: Definição de rotas, handlers e lógica HTTP.
+* `internal/database`: Repositórios, migrações e interação direta com o PostgreSQL.
+* `internal/models`: Definições das estruturas de dados (`User`, `Monitor`, `CheckResult`).
+* `internal/monitor`: Motores de verificação ("Checkers") para HTTP e DNS, e gestor de rotinas.
+* `internal/notification`: Serviço de envio de e-mails e templates HTML responsivos.
