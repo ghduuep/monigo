@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/ghduuep/pingly/internal/database"
-	"github.com/go-chi/jwtauth"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,7 +38,7 @@ func (h *Handler) Login(w http.ResponseWriter, req *http.Request) {
 		"user_id": user.ID,
 	}
 
-	jwtauth.SetExpiry(claims, time.Now().Add(24 * time.Hour))
+	jwtauth.SetExpiry(claims, time.Now().Add(24*time.Hour))
 
 	_, tokenString, err := h.TokenAuth.Encode(claims)
 	if err != nil {
@@ -51,9 +50,9 @@ func (h *Handler) Login(w http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
 }
 
-
-func(h *Handler) Register(w http.ResponseWriter, req *http.Request) {
+func (h *Handler) Register(w http.ResponseWriter, req *http.Request) {
 	var creds struct {
+		Username string `json:username`
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
@@ -69,7 +68,9 @@ func(h *Handler) Register(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = database.CreateUser(req.Context(), h.DB, creds.Email, string(hashedPassword))
+	creds.Password = string(hashedPassword)
+
+	err = database.CreateUser(req.Context(), h.DB, creds)
 	if err != nil {
 		http.Error(w, "Error creating user", http.StatusInternalServerError)
 		return
