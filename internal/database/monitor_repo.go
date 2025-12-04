@@ -55,3 +55,11 @@ func DeleteMonitor(ctx context.Context, db *pgxpool.Pool, monitorID int64) error
 	}
 	return nil
 }
+
+func SetInitialDNSConfig(ctx context.Context, db *pgxpool.Pool, monitorID int, detectedValue string) error {
+	query := `UPDATE monitors SET config = config || json_build_object('expected_value', $1::text) WHERE id = $2
+	AND (config->>'expected_value' IS NULL or config->>'expected_value' = '')`
+
+	_, err := db.Exec(ctx, query, detectedValue, monitorID)
+	return err
+}

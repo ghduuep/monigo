@@ -60,36 +60,30 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 	}
 }
 
-func handleAutoDiscovery(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, res models.CheckResult) {
-	if m.Type != models.TypeDNS || res.Status != models.StatusUp {
-		return
-	}
-
-	var dnsConfig models.DNSConfig
-	if err := json.Unmarshal(m.Config, &dnsConfig); err != nil {
-		return
-	}
-
-	if dnsConfig.ExpectedValue != "" {
-		return
-	}
-
-	log.Printf("[LOG] Auto Discovery: learning value '%s' for monitor %d", res.ResultValue, m.ID)
-
-	dnsConfig.ExpectedValue = res.ResultValue
-	newConfigJson, _ := json.Marshal(dnsConfig)
-
-	m.Config = newConfigJson
-
-	if err := database.UpdateMonitorConfig(ctx, db, m.ID, newConfigJson); err != nil {
-		log.Printf("[ERROR] Failed to save auto config: %v", err)
-	}
-}
-
 func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emailService *notification.EmailService) {
 	result := performCheck(*m)
 
-	handleAutoDiscovery(ctx, db, m, result)
+	if m.Type == models.TypeDNS && result.Status == models.StatusUp && result.ResultValue != "" {
+		if err := database.SetInitialDNSConfig(ctx, db, m.ID, result.ResultValue); err != nil {
+			log.Printf("[ERROR] Failed to set initial DNS config: %v", err)
+		}
+
+		var config models.DNSConfig
+		if err := json.Unmarshal(m.Config, &config); err != nil {
+			log.Printf("[ERROR] Failed to unmarsh json config")
+			return
+		}
+
+		if config.ExpectedValue != "" {
+			return
+		}
+
+		log.Printf("[INFO] Learning DNS value for monitor %d: %s", m.ID, result.ResultValue)
+
+		config.ExpectedValue = result.ResultValue
+		newJSON, _ := json.Marshal(config)
+		m.Config = newJSON
+	}
 
 	if err := database.CreateCheckResult(ctx, db, &result); err != nil {
 		log.Printf("[ERROR] failed to save check result for monitor %d: %v", m.ID, err)
