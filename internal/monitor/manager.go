@@ -3,15 +3,12 @@ package monitor
 import (
 	"context"
 	"encoding/json"
-	"log"
-	"time"
-
-	"vendor/golang.org/x/net/dns/dnsmessage"
-
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/notification"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"log"
+	"time"
 )
 
 func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notification.EmailService) {
