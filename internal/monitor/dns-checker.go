@@ -43,6 +43,8 @@ func checkDNS(m models.Monitor) models.CheckResult {
 		resultString, err = lookupMX(ctx, r, m.Target)
 	case "NS":
 		resultString, err = lookupNS(ctx, r, m.Target)
+	case "TXT":
+		resultString, err = lookupTXT(ctx, r, m.Target)
 	default:
 		return models.CheckResult{Status: models.StatusDown, Message: "Invalid DNS record type."}
 	}
@@ -141,4 +143,19 @@ func lookupNS(ctx context.Context, r *net.Resolver, host string) (string, error)
 	sort.Strings(results)
 
 	return strings.Join(results, ", "), nil
+}
+
+func lookupTXT(ctx context.Context, r *net.Resolver, host string) (string, error) {
+	txts, err := r.LookupTXT(ctx, host)
+	if err != nil {
+		return "", nil
+	}
+
+	for _, txt := range txts {
+		txts = append(txts, txt)
+	}
+
+	sort.Strings(txts)
+
+	return strings.Join(txts, ", "), nil
 }

@@ -43,6 +43,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(20))))
+	e.Use(middleware.CORS())
 
 	e.Validator = &api.CustomValidator{Validator: validator.New()}
 

@@ -23,6 +23,21 @@ func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID int) ([]*
 	return monitors, nil
 }
 
+func GetAllMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.Monitor, error) {
+	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, created_at FROM monitors`
+	rows, err := db.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	monitors, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.Monitor])
+	if err != nil {
+		return nil, err
+	}
+	return monitors, nil
+}
+
 func CreateMonitor(ctx context.Context, db *pgxpool.Pool, monitor *models.Monitor) error {
 	query := `INSERT INTO monitors (user_id, target, type, config, interval) VALUES ($1, $2, $3, $4, $5) RETURNING id`
 	err := db.QueryRow(ctx, query, monitor.UserID, monitor.Target, monitor.Type, monitor.Config, monitor.Interval).Scan(&monitor.ID)

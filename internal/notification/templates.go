@@ -19,10 +19,10 @@ func (s *EmailService) SendStatusAlert(userEmail string, m models.Monitor, resul
 		}
 
 		if result.Status == models.StatusDown && result.ResultValue != "" {
-			return s.sendDNSChangedAlert(userEmail, m, result) // Caso 3
+			return s.sendDNSChangedAlert(userEmail, m, result)
 		}
 
-		return s.sendDNSStatusAlert(userEmail, m, result) // Caso 2
+		return s.sendDNSStatusAlert(userEmail, m, result)
 	}
 
 	return nil
@@ -30,21 +30,25 @@ func (s *EmailService) SendStatusAlert(userEmail string, m models.Monitor, resul
 
 func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.CheckResult) error {
 	emoji := "🟢"
+	color := "#38a169"
+
+	timeLayout := "02/01/2006 15:04:05"
+	var timeDetails string
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
+		color = "#e53e5e"
+		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
+	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusUnknown {
+		timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
 	}
 	subject := fmt.Sprintf("%s %s está %s", emoji, m.Target, res.Status)
-	color := "#e53e3e" // Vermelho
-	if res.Status == models.StatusUp {
-		color = "#38a169"
-	} // Verde
-
 	body := fmt.Sprintf(`
 		<h2>Atualização de Status HTTP</h2>
 		<p>O monitor <strong>%s</strong> mudou para <span style="color:%s"><strong>%s</strong></span>.</p>
 		<p><strong>Motivo:</strong> %s</p>
 		<p><strong>Latência:</strong> %vms</p>
-	`, m.Target, color, res.Status, res.Message, res.Latency)
+		%s
+	`, m.Target, color, res.Status, res.Message, res.Latency, timeDetails)
 
 	return s.SendEmail(to, subject, body)
 }
