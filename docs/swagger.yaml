@@ -1,0 +1,290 @@
+basePath: /api/v1
+definitions:
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.MonitorRequest:
+    properties:
+      config:
+        type: string
+      interval:
+        type: integer
+      target:
+        type: string
+      type:
+        $ref: '#/definitions/models.MonitorType'
+    type: object
+  dto.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  models.Monitor:
+    properties:
+      config:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      interval:
+        type: integer
+      last_check_at:
+        type: string
+      last_check_status:
+        $ref: '#/definitions/models.MonitorStatus'
+      target:
+        type: string
+      type:
+        $ref: '#/definitions/models.MonitorType'
+      user_id:
+        type: integer
+    type: object
+  models.MonitorStatus:
+    enum:
+    - up
+    - down
+    - unknown
+    type: string
+    x-enum-varnames:
+    - StatusUp
+    - StatusDown
+    - StatusUnknown
+  models.MonitorType:
+    enum:
+    - http
+    - ping
+    - dns
+    type: string
+    x-enum-varnames:
+    - TypeHTTP
+    - TypePing
+    - TypeDNS
+host: localhost:8080
+info:
+  contact:
+    email: support@pingly.com
+    name: API Support
+  description: API for Pingly monitoring service.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Pingly API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token.
+      parameters:
+      - description: Login Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - auth
+  /monitors:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all monitors created by the authenticated user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Monitor'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get all monitors
+      tags:
+      - monitors
+    post:
+      consumes:
+      - application/json
+      description: Create a new monitor for a target (HTTP, DNS, etc).
+      parameters:
+      - description: Monitor Configuration
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MonitorRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new monitor
+      tags:
+      - monitors
+  /monitors/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a monitor by its ID.
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete a monitor
+      tags:
+      - monitors
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific monitor details.
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Monitor'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get monitor by ID
+      tags:
+      - monitors
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account using username, email, and password.
+      parameters:
+      - description: Register Credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

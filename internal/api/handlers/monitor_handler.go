@@ -11,6 +11,15 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// @Summary Get all monitors
+// @Description Retrieve all monitors created by the authenticated user.
+// @Tags monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} models.Monitor
+// @Failure 500 {object} map[string]string
+// @Router /monitors [get]
 func (h *Handler) GetMonitors(c echo.Context) error {
 	userID := getUserIdFromToken(c)
 	monitors, err := database.GetMonitorsByUserID(c.Request().Context(), h.DB, userID)
@@ -21,6 +30,17 @@ func (h *Handler) GetMonitors(c echo.Context) error {
 	return c.JSON(http.StatusOK, monitors)
 }
 
+// @Summary Get monitor by ID
+// @Description Retrieve a specific monitor details.
+// @Tags monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Monitor ID"
+// @Success 200 {object} models.Monitor
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /monitors/{id} [get]
 func (h *Handler) GetMonitorByID(c echo.Context) error {
 	idParam := c.Param("id")
 	id, err := strconv.Atoi(idParam)
@@ -38,6 +58,17 @@ func (h *Handler) GetMonitorByID(c echo.Context) error {
 	return c.JSON(http.StatusOK, monitor)
 }
 
+// @Summary Create a new monitor
+// @Description Create a new monitor for a target (HTTP, DNS, etc).
+// @Tags monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.MonitorRequest true "Monitor Configuration"
+// @Success 201 {object} nil
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /monitors [post]
 func (h *Handler) CreateMonitor(c echo.Context) error {
 	var req dto.MonitorRequest
 	if err := c.Bind(&req); err != nil {
@@ -62,6 +93,17 @@ func (h *Handler) CreateMonitor(c echo.Context) error {
 	return c.NoContent(http.StatusCreated)
 }
 
+// @Summary Delete a monitor
+// @Description Remove a monitor by its ID.
+// @Tags monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Monitor ID"
+// @Success 200 {string} string "No Content"
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /monitors/{id} [delete]
 func (h *Handler) DeleteMonitor(c echo.Context) error {
 	idParam := c.Param("id")
 	id, err := strconv.Atoi(idParam)

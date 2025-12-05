@@ -34,8 +34,8 @@ type Monitor struct {
 	UserID          int             `json:"user_id" db:"user_id"`
 	Target          string          `json:"target" db:"target"`
 	Type            MonitorType     `json:"type" db:"type"`
-	Config          json.RawMessage `json:"config" db:"config"`
-	Interval        time.Duration   `json:"interval" db:"interval"`
+	Config          json.RawMessage `json:"config" db:"config" swaggertype:"string"`
+	Interval        time.Duration   `json:"interval" db:"interval" swaggertype:"integer"`
 	LastCheckStatus MonitorStatus   `json:"last_check_status" db:"last_check_status"`
 	LastCheckAt     *time.Time      `json:"last_check_at" db:"last_check_at"`
 	CreatedAt       time.Time       `json:"created_at" db:"created_at"`

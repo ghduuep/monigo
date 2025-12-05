@@ -27,6 +27,6 @@ type LoginRequest struct {
 type MonitorRequest struct {
 	Target   string             `json:"target" db:"target"`
 	Type     models.MonitorType `json:"type" db:"type"`
-	Config   json.RawMessage    `json:"config" db:"config"`
-	Interval time.Duration      `json:"interval" db:"interval"`
+	Config   json.RawMessage    `json:"config" db:"config" swaggertype:"string"`
+	Interval time.Duration      `json:"interval" db:"interval" swaggertype:"integer"`
 }

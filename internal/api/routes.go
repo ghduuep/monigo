@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 func SetupRotes(e *echo.Echo, db *pgxpool.Pool) {
@@ -16,6 +17,7 @@ func SetupRotes(e *echo.Echo, db *pgxpool.Pool) {
 
 	v1.POST("/register", handler.Register)
 	v1.POST("/login", handler.Login)
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	protected := e.Group("/api/v1")
 
