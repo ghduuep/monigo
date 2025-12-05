@@ -33,7 +33,7 @@ func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.Che
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
 	}
-	subject := fmt.Sprintf("%s Monitor HTTP: %s está %s", emoji, m.Target, res.Status)
+	subject := fmt.Sprintf("%s %s está %s", emoji, m.Target, res.Status)
 	color := "#e53e3e" // Vermelho
 	if res.Status == models.StatusUp {
 		color = "#38a169"
@@ -64,7 +64,7 @@ func (s *EmailService) sendDNSStatusAlert(to string, m models.Monitor, res model
 }
 
 func (s *EmailService) sendDNSChangedAlert(to string, m models.Monitor, res models.CheckResult) error {
-	subject := fmt.Sprintf("🚨 ALERTA CRÍTICO: DNS de %s foi Alterado!", m.Target)
+	subject := fmt.Sprintf("🚨 DNS de %s foi Alterado!", m.Target)
 
 	body := fmt.Sprintf(`
 		<div style="border: 2px solid red; padding: 15px; background-color: #fff5f5;">

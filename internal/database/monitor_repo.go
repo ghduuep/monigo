@@ -47,7 +47,7 @@ func UpdateMonitorConfig(ctx context.Context, db *pgxpool.Pool, monitorID int, n
 	return err
 }
 
-func DeleteMonitor(ctx context.Context, db *pgxpool.Pool, monitorID int64) error {
+func DeleteMonitor(ctx context.Context, db *pgxpool.Pool, monitorID int) error {
 	query := `DELETE FROM monitors WHERE id = $1`
 	_, err := db.Exec(ctx, query, monitorID)
 	if err != nil {
@@ -62,4 +62,16 @@ func SetInitialDNSConfig(ctx context.Context, db *pgxpool.Pool, monitorID int, d
 
 	_, err := db.Exec(ctx, query, detectedValue, monitorID)
 	return err
+}
+
+func GetMonitorByID(ctx context.Context, db *pgxpool.Pool, monitorID int) (models.Monitor, error) {
+	query := `SELECT * FROM monitors WHERE id = $1`
+
+	var monitor models.Monitor
+	err := db.QueryRow(ctx, query, monitorID).Scan(&monitor.ID, &monitor.UserID, &monitor.Target, &monitor.Type, &monitor.Config, &monitor.Interval, &monitor.LastCheckStatus, &monitor.LastCheckAt, &monitor.CreatedAt)
+	if err != nil {
+		return models.Monitor{}, nil
+	}
+
+	return monitor, nil
 }
