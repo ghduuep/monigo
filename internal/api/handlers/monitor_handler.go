@@ -75,6 +75,10 @@ func (h *Handler) CreateMonitor(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data."})
 	}
 
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
 	userID := getUserIdFromToken(c)
 
 	monitor := models.Monitor{

@@ -6,6 +6,7 @@ import (
 	_ "github.com/ghduuep/pingly/docs"
 	"github.com/ghduuep/pingly/internal/api"
 	"github.com/ghduuep/pingly/internal/database"
+	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -42,6 +43,8 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(rate.Limit(20))))
+
+	e.Validator = &api.CustomValidator{Validator: validator.New()}
 
 	api.SetupRotes(e, db)
 
