@@ -63,11 +63,11 @@ func GetUserByID(ctx context.Context, db *pgxpool.Pool, id int) (models.User, er
 	return user, nil
 }
 
-func GetUserByEmail(ctx context.Context, db *pgxpool.Pool, email string) (models.User, error) {
-	query := `SELECT * FROM users WHERE email = $1`
+func GetUserByUsername(ctx context.Context, db *pgxpool.Pool, username string) (models.User, error) {
+	query := `SELECT * FROM users WHERE username = $1`
 
 	var user models.User
-	err := db.QueryRow(ctx, query, email).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreatedAt)
+	err := db.QueryRow(ctx, query, username).Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash, &user.CreatedAt)
 	if err != nil {
 		return models.User{}, err
 	}

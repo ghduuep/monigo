@@ -69,7 +69,7 @@ func (h *Handler) Login(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data."})
 	}
 
-	user, err := database.GetUserByEmail(c.Request().Context(), h.DB, req.Email)
+	user, err := database.GetUserByUsername(c.Request().Context(), h.DB, req.Username)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid credentials."})
 	}
