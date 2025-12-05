@@ -93,6 +93,7 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 		log.Printf("[LOG] Monitor %d has changed from %s to %s", m.ID, m.LastCheckStatus, result.Status)
 
 		m.LastCheckStatus = result.Status
+		m.StatusChangedAt = &result.CheckedAt
 		if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
 			log.Printf("[ERROR] Failed to update monitor %d: %v", m.ID, err)
 		}

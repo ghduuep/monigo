@@ -55,6 +55,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		interval INTERVAL NOT NULL,
 		last_check_status VARCHAR(10) DEFAULT 'unknown',
 		last_check_at TIMESTAMPTZ,
+		status_changed_at TIMESTAMPTZ,
 		created_at TIMESTAMPTZ DEFAULT NOW(),
 
 		CONSTRAINT type_check CHECK (type IN ('http', 'dns', 'ping'))

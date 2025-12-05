@@ -38,6 +38,7 @@ type Monitor struct {
 	Interval        time.Duration   `json:"interval" db:"interval" swaggertype:"integer"`
 	LastCheckStatus MonitorStatus   `json:"last_check_status" db:"last_check_status"`
 	LastCheckAt     *time.Time      `json:"last_check_at" db:"last_check_at"`
+	StatusChangedAt *time.Time      `json:"status_changed_at" db:"status_changed_at"`
 	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
 }
 

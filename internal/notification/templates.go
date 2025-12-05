@@ -37,7 +37,7 @@ func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.Che
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
 		color = "#e53e5e"
-		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
+		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", m.StatusChangedAt.Format(timeLayout))
 	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusUnknown {
 		timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
 	}

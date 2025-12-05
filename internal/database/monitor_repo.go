@@ -9,7 +9,7 @@ import (
 )
 
 func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID int) ([]*models.Monitor, error) {
-	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, created_at FROM monitors WHERE user_id = $1`
+	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, status_changed_at, created_at FROM monitors WHERE user_id = $1`
 	rows, err := db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID int) ([]*
 }
 
 func GetAllMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.Monitor, error) {
-	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, created_at FROM monitors`
+	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, status_changed_at, created_at FROM monitors`
 	rows, err := db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func CreateMonitor(ctx context.Context, db *pgxpool.Pool, monitor *models.Monito
 }
 
 func UpdateMonitorStatus(ctx context.Context, db *pgxpool.Pool, monitorID int, status string) error {
-	query := `UPDATE monitors SET last_check_status = $1, last_check_at = NOW() WHERE id = $2`
+	query := `UPDATE monitors SET last_check_status = $1, last_check_at = NOW(), status_changed_at = NOW() WHERE id = $2`
 	_, err := db.Exec(ctx, query, status, monitorID)
 	if err != nil {
 		return err
