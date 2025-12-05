@@ -25,7 +25,6 @@ type LoginRequest struct {
 }
 
 type MonitorRequest struct {
-	UserID   int                `json:"user_id" db:"user_id"`
 	Target   string             `json:"target" db:"target"`
 	Type     models.MonitorType `json:"type" db:"type"`
 	Config   json.RawMessage    `json:"config" db:"config"`

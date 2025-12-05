@@ -12,7 +12,8 @@ import (
 )
 
 func (h *Handler) GetMonitors(c echo.Context) error {
-	monitors, err := database.GetAllMonitors(c.Request().Context(), h.DB)
+	userID := getUserIdFromToken(c)
+	monitors, err := database.GetMonitorsByUserID(c.Request().Context(), h.DB, userID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get monitors."})
 	}
@@ -27,7 +28,9 @@ func (h *Handler) GetMonitorByID(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
 	}
 
-	monitor, err := database.GetMonitorByID(c.Request().Context(), h.DB, id)
+	userID := getUserIdFromToken(c)
+
+	monitor, err := database.GetMonitorByIDAndUser(c.Request().Context(), h.DB, id, userID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
@@ -41,8 +44,10 @@ func (h *Handler) CreateMonitor(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data."})
 	}
 
+	userID := getUserIdFromToken(c)
+
 	monitor := models.Monitor{
-		UserID:    req.UserID,
+		UserID:    userID,
 		Target:    req.Target,
 		Type:      req.Type,
 		Config:    req.Config,
@@ -64,7 +69,9 @@ func (h *Handler) DeleteMonitor(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
 	}
 
-	if err := database.DeleteMonitor(c.Request().Context(), h.DB, id); err != nil {
+	userID := getUserIdFromToken(c)
+
+	if err := database.DeleteMonitor(c.Request().Context(), h.DB, id, userID); err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 

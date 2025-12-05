@@ -8,9 +8,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func GetAllMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.Monitor, error) {
-	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, created_at FROM monitors`
-	rows, err := db.Query(ctx, query)
+func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID int) ([]*models.Monitor, error) {
+	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, created_at FROM monitors WHERE user_id = $1`
+	rows, err := db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,9 +47,9 @@ func UpdateMonitorConfig(ctx context.Context, db *pgxpool.Pool, monitorID int, n
 	return err
 }
 
-func DeleteMonitor(ctx context.Context, db *pgxpool.Pool, monitorID int) error {
-	query := `DELETE FROM monitors WHERE id = $1`
-	_, err := db.Exec(ctx, query, monitorID)
+func DeleteMonitor(ctx context.Context, db *pgxpool.Pool, monitorID int, userID int) error {
+	query := `DELETE FROM monitors WHERE id = $1 AND user_id = $2`
+	_, err := db.Exec(ctx, query, monitorID, userID)
 	if err != nil {
 		return err
 	}
@@ -64,11 +64,11 @@ func SetInitialDNSConfig(ctx context.Context, db *pgxpool.Pool, monitorID int, d
 	return err
 }
 
-func GetMonitorByID(ctx context.Context, db *pgxpool.Pool, monitorID int) (models.Monitor, error) {
-	query := `SELECT * FROM monitors WHERE id = $1`
+func GetMonitorByIDAndUser(ctx context.Context, db *pgxpool.Pool, monitorID int, userID int) (models.Monitor, error) {
+	query := `SELECT * FROM monitors WHERE id = $1 AND user_id = $2`
 
 	var monitor models.Monitor
-	err := db.QueryRow(ctx, query, monitorID).Scan(&monitor.ID, &monitor.UserID, &monitor.Target, &monitor.Type, &monitor.Config, &monitor.Interval, &monitor.LastCheckStatus, &monitor.LastCheckAt, &monitor.CreatedAt)
+	err := db.QueryRow(ctx, query, monitorID, userID).Scan(&monitor.ID, &monitor.UserID, &monitor.Target, &monitor.Type, &monitor.Config, &monitor.Interval, &monitor.LastCheckStatus, &monitor.LastCheckAt, &monitor.CreatedAt)
 	if err != nil {
 		return models.Monitor{}, nil
 	}

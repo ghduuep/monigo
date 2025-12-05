@@ -13,6 +13,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// @Summary Create new user
+// @Description Create the user using username, e-mail and password.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body RegisterRequest true "Register Credentials"
+// @Success 201 {object} map[string]interface{}
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /register [post]
 func (h *Handler) Register(c echo.Context) error {
 	var req dto.RegisterRequest
 	if err := c.Bind(&req); err != nil {
@@ -37,6 +47,17 @@ func (h *Handler) Register(c echo.Context) error {
 
 	return c.NoContent(http.StatusCreated)
 }
+
+// @Summary Login user
+// @Description Authenticate the user using e-mail and password and returns a token.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body LoginRequest true "Login Credentials"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Router /login [post]
 
 func (h *Handler) Login(c echo.Context) error {
 	var req dto.LoginRequest
