@@ -92,8 +92,12 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 	if result.Status != m.LastCheckStatus && result.Status != models.StatusUnknown {
 		log.Printf("[LOG] Monitor %d has changed from %s to %s", m.ID, m.LastCheckStatus, result.Status)
 
+		var downtimeDuration time.Duration
+		if m.StatusChangedAt != nil && m.LastCheckStatus == models.StatusDown && result.Status == models.StatusUp {
+			downtimeDuration = result.CheckedAt.Sub(*m.StatusChangedAt)
+		}
+
 		m.LastCheckStatus = result.Status
-		m.StatusChangedAt = &result.CheckedAt
 		if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
 			log.Printf("[ERROR] Failed to update monitor %d: %v", m.ID, err)
 		}
@@ -101,11 +105,11 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 		userEmail, _ := database.GetUserEmailByID(ctx, db, m.UserID)
 
 		if userEmail != "" {
-			go func(mon models.Monitor, res models.CheckResult) {
-				if err := emailService.SendStatusAlert(userEmail, mon, res); err != nil {
+			go func(mon models.Monitor, res models.CheckResult, duration time.Duration) {
+				if err := emailService.SendStatusAlert(userEmail, mon, res, duration); err != nil {
 					log.Printf("[ERROR] Failed to send e-mail: %v", err)
 				}
-			}(*m, result)
+			}(*m, result, downtimeDuration)
 		}
 	}
 }

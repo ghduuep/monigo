@@ -2,14 +2,15 @@ package notification
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ghduuep/pingly/internal/models"
 )
 
-func (s *EmailService) SendStatusAlert(userEmail string, m models.Monitor, result models.CheckResult) error {
+func (s *EmailService) SendStatusAlert(userEmail string, m models.Monitor, result models.CheckResult, duration time.Duration) error {
 
 	if m.Type == models.TypeHTTP {
-		return s.sendHTTPAlert(userEmail, m, result)
+		return s.sendHTTPAlert(userEmail, m, result, duration)
 	}
 
 	if m.Type == models.TypeDNS {
@@ -28,7 +29,7 @@ func (s *EmailService) SendStatusAlert(userEmail string, m models.Monitor, resul
 	return nil
 }
 
-func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.CheckResult) error {
+func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.CheckResult, d time.Duration) error {
 	emoji := "🟢"
 	color := "#38a169"
 
@@ -37,9 +38,13 @@ func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.Che
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
 		color = "#e53e5e"
-		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", m.StatusChangedAt.Format(timeLayout))
-	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusUnknown {
+		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
+	} else if res.Status == models.StatusUp {
 		timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
+
+		if d > 0 {
+			timeDetails += fmt.Sprintf("<p><strong>Duration:</strong> %s</p>", d.Round(time.Second).String())
+		}
 	}
 	subject := fmt.Sprintf("%s %s está %s", emoji, m.Target, res.Status)
 	body := fmt.Sprintf(`
