@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"vendor/golang.org/x/net/dns/dnsmessage"
+
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/notification"
@@ -105,9 +107,12 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 
 		userEmail, _ := database.GetUserEmailByID(ctx, db, m.UserID)
 
+		var dnsConfig models.DNSConfig
+		json.Unmarshal(m.Config, &dnsConfig)
+
 		if userEmail != "" {
 			go func(mon models.Monitor, res models.CheckResult, duration time.Duration) {
-				if err := emailService.SendStatusAlert(userEmail, mon, res, duration); err != nil {
+				if err := emailService.SendStatusAlert(userEmail, mon, res, dnsConfig.RecordType, duration); err != nil {
 					log.Printf("[ERROR] Failed to send e-mail: %v", err)
 				}
 			}(*m, result, downtimeDuration)
