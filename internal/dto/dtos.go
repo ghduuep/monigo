@@ -14,9 +14,9 @@ type UserResponse struct {
 }
 
 type RegisterRequest struct {
-	Username string `json:"username" validate:"required, alpha"`
-	Email    string `json:"email" validate:"required, email"`
-	Password string `json:"password" validate:"required, min=6"`
+	Username string `json:"username" validate:"required,alpha"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=6"`
 }
 
 type LoginRequest struct {
@@ -28,5 +28,5 @@ type MonitorRequest struct {
 	Target   string             `json:"target" db:"target" validate:"required"`
 	Type     models.MonitorType `json:"type" db:"type" validate:"required,oneof=http dns"`
 	Config   json.RawMessage    `json:"config" db:"config" swaggertype:"string"`
-	Interval time.Duration      `json:"interval" db:"interval" validate:"required, min=30000000000"`
+	Interval time.Duration      `json:"interval" db:"interval" validate:"required,min=30000000000"`
 }
