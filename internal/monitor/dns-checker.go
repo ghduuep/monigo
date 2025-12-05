@@ -151,10 +151,6 @@ func lookupTXT(ctx context.Context, r *net.Resolver, host string) (string, error
 		return "", nil
 	}
 
-	for _, txt := range txts {
-		txts = append(txts, txt)
-	}
-
 	sort.Strings(txts)
 
 	return strings.Join(txts, ", "), nil
