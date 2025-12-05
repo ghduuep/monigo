@@ -14,19 +14,19 @@ type UserResponse struct {
 }
 
 type RegisterRequest struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username string `json:"username" validate:"required, alpha"`
+	Email    string `json:"email" validate:"required, email"`
+	Password string `json:"password" validate:"required, min=6"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type MonitorRequest struct {
-	Target   string             `json:"target" db:"target"`
-	Type     models.MonitorType `json:"type" db:"type"`
+	Target   string             `json:"target" db:"target" validate:"required"`
+	Type     models.MonitorType `json:"type" db:"type" validate:"required"`
 	Config   json.RawMessage    `json:"config" db:"config" swaggertype:"string"`
-	Interval time.Duration      `json:"interval" db:"interval" swaggertype:"integer"`
+	Interval time.Duration      `json:"interval" db:"interval" validate:"required, min=30000000000"`
 }
