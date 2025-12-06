@@ -104,8 +104,6 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 
 		userEmail, _ := database.GetUserEmailByID(ctx, db, m.UserID)
 
-		json.Unmarshal(m.Config, &config)
-
 		go func(mon models.Monitor, res models.CheckResult, duration time.Duration) {
 			if err := emailService.SendStatusAlert(userEmail, mon, res, config.RecordType, duration); err != nil {
 				log.Printf("[ERROR] Failed to send e-mail: %v", err)
