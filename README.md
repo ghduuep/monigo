@@ -5,10 +5,9 @@ O **Monigo** é uma ferramenta robusta de monitorização de websites e registos
 ## 🚀 Funcionalidades
 
 * **Monitorização HTTP**: Verificação periódica de estado (UP/DOWN), medição de latência e análise de códigos de resposta HTTP.
-* **Monitorização de DNS Inteligente**:
-    * Suporte para registos **A**, **AAAA**, **MX** e **NS**.
-    * **Auto-Discovery**: Se não for fornecido um valor esperado, o sistema aprende automaticamente o valor atual do DNS na primeira verificação e passa a monitorizar alterações baseadas nesse valor.
-* **Sistema de Notificações**: Envio automático de e-mails via SMTP para:
+* **Monitorização de DNS**:
+    * Suporte para registos **A**, **AAAA**, **MX**, **NS** e **TXT**.
+    * **Sistema de Notificações**: Envio automático de e-mails via SMTP para:
     * Falhas de disponibilidade (Site Down).
     * Recuperação de serviços (Site Up).
     * Falhas na resolução de DNS.
