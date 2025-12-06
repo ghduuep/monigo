@@ -1,34 +1,35 @@
 package notification
 
 import (
-	"fmt"
-	"net/smtp"
+	"github.com/resend/resend-go/v3"
 )
 
 type EmailService struct {
-	Host string
-	Port string
+	Client *resend.Client
 	Sender string
-	Password string
 }
 
-func NewEmailService(host, port, sender, password string) *EmailService {
+func NewEmailService(apiKey, sender string) *EmailService {
+	client := resend.NewClient(apiKey)
+
 	return &EmailService{
-		Host: host,
-		Port: port,
+		Client: client,
 		Sender: sender,
-		Password: password,
 	}
 }
 
 func (s *EmailService) SendEmail(to, subject, body string) error {
-	auth := smtp.PlainAuth("", s.Sender, s.Password, s.Host)
-	address := s.Host + ":" + s.Port
+	params := &resend.SendEmailRequest{
+		From:    s.Sender,
+		To:      []string{to},
+		Subject: subject,
+		Html:    body,
+	}
 
-	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+	_, err := s.Client.Emails.Send(params)
+	if err != nil {
+		return err
+	}
 
-	var msg []byte
-	msg = fmt.Appendf(msg, "To: %s\r\nSubject: %s\r\n%s\r\n%s", to, subject, mime, body)
-
-	return smtp.SendMail(address, auth, s.Sender, []string{to}, msg)
+	return nil
 }

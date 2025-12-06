@@ -18,10 +18,8 @@ func main() {
 	}
 
 	emailService := notification.NewEmailService(
-		os.Getenv("SMTP_HOST"),
-		os.Getenv("SMTP_PORT"),
-		os.Getenv("SMTP_SENDER"),
-		os.Getenv("SMTP_PASSWORD"),
+		os.Getenv("RESEND_API_KEY"),
+		os.Getenv("EMAIL_SENDER"),
 	)
 
 	db := database.InitDB()
