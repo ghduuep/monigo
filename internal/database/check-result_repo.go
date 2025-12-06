@@ -3,8 +3,8 @@ package database
 import (
 	"context"
 
+	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/ghduuep/pingly/internal/models"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -17,22 +17,31 @@ func CreateCheckResult(ctx context.Context, db *pgxpool.Pool, result *models.Che
 	return nil
 }
 
-func GetLatestCheckResults(ctx context.Context, db *pgxpool.Pool, monitorID int) ([]*models.CheckResult, error) {
-	query := `SELECT id, monitor_id, status, latency_ms, status_code, result_value, message, checked_at 
-		FROM check_results 
-		WHERE monitor_id = $1 
-		ORDER BY checked_at DESC 
-		LIMIT $2`
+func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int) (dto.MonitorStatsResponse, error) {
+	query := `SELECT
+				COUNT(*) FILTER (WHERE checked_at > NOW() - INTERVAL '24 hours') as last_24_checks,
+				COALESCE(AVG(latency_ms), 0) as avg_latency,
+				COALESCE(
+					(COUNT(*) FILTER (WHERE status = 'up') * 100.0 / NULLIF(COUNT(*), 0)),
+					0
+				) as uptime_percentage
+			FROM check_results
+			WHERE monitor_id = $1
+			AND checked_at > NOW() - INTERVAL '30 days'
+			`
 
-	rows, err := db.Query(ctx, query, monitorID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
+	var stats dto.MonitorStatsResponse
+	stats.MonitorID = monitorID
 
-	checks, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.CheckResult])
+	err := db.QueryRow(ctx, query, monitorID).Scan(
+		&stats.Last24HChecks,
+		&stats.AvgLatency,
+		&stats.UptimePercentage,
+	)
+
 	if err != nil {
-		return nil, err
+		return dto.MonitorStatsResponse{}, err
 	}
-	return checks, nil
+
+	return stats, nil
 }

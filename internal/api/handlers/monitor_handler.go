@@ -124,19 +124,16 @@ func (h *Handler) DeleteMonitor(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
-// @Summary Get monitor check results
-// @Description Retrieve the latest check results for a specific monitor.
+// @Summary Get monitor stats
+// @Description Get uptime and latency stats for a monitor
 // @Tags monitors
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "Monitor ID"
-// @Success 200 {array} models.CheckResult
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /monitors/{id}/checks [get]
-func (h *Handler) GetMonitorChecks(c echo.Context) error {
+// @Success 200 {object} dto.MonitorStatsResponse
+// @Router /monitors/{id}/stats [get]
+func (h *Handler) GetMonitorStats(c echo.Context) error {
 	idParam := c.Param("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
@@ -150,10 +147,10 @@ func (h *Handler) GetMonitorChecks(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 
-	checks, err := database.GetLatestCheckResults(c.Request().Context(), h.DB, id)
+	stats, err := database.GetMonitorStats(c.Request().Context(), h.DB, id)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch results."})
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get stats."})
 	}
 
-	return c.JSON(http.StatusOK, checks)
+	return c.JSON(http.StatusOK, stats)
 }

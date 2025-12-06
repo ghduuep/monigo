@@ -30,3 +30,10 @@ type MonitorRequest struct {
 	Config   json.RawMessage    `json:"config" db:"config" swaggertype:"string"`
 	Interval time.Duration      `json:"interval" db:"interval" validate:"required,min=30000000000"`
 }
+
+type MonitorStatsResponse struct {
+	MonitorID        int     `json:"monitor_id"`
+	UptimePercentage float64 `json:"uptime_percentage"`
+	AvgLatency       float64 `json:"avg_latency"`
+	Last24HChecks    int     `json:"last_24h_checks"`
+}
