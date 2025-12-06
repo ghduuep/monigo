@@ -20,21 +20,25 @@ func CreateCheckResult(ctx context.Context, db *pgxpool.Pool, result *models.Che
 
 func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int) (dto.MonitorStatsResponse, error) {
 	query := `SELECT
-				COUNT(*) FILTER (WHERE checked_at > NOW() - INTERVAL '24 hours') as last_24_checks,
-				COALESCE(AVG(latency_ms), 0) as avg_latency,
+				m.last_check_status,
+				m.last_check_at,
+				COUNT(cr.id) FILTER (WHERE cr.checked_at > NOW() - INTERVAL '24 hours') as last_24_checks,
+				COALESCE(AVG(cr.latency_ms), 0) as avg_latency,
 				COALESCE(
-					(COUNT(*) FILTER (WHERE status = 'up') * 100.0 / NULLIF(COUNT(*), 0)),
+					(COUNT(cr.id) FILTER (WHERE cr.status = 'up') * 100.0 / NULLIF(COUNT(cr.id), 0)),
 					0
 				) as uptime_percentage
-			FROM check_results
-			WHERE monitor_id = $1
-			AND checked_at > NOW() - INTERVAL '30 days'
-			`
+			FROM monitors m
+			LEFT JOIN check_results cr ON cr.monitor_id = m.id AND cr.checked_at > NOW() - INTERVAL '30 days'
+			WHERE m.id = $1
+			GROUP BY m.id, m.last_check_status, m.last_check_at`
 
 	var stats dto.MonitorStatsResponse
 	stats.MonitorID = monitorID
 
 	err := db.QueryRow(ctx, query, monitorID).Scan(
+		&stats.LastStatus,
+		&stats.LastCheckAt,
 		&stats.Last24HChecks,
 		&stats.AvgLatency,
 		&stats.UptimePercentage,
