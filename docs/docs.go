@@ -287,6 +287,73 @@ const docTemplate = `{
                 }
             }
         },
+        "/monitors/{id}/checks": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieve the latest check results for a specific monitor.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "monitors"
+                ],
+                "summary": "Get monitor check results",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Monitor ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.CheckResult"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/register": {
             "post": {
                 "description": "Create a new user account using username, email, and password.",
@@ -340,43 +407,68 @@ const docTemplate = `{
     "definitions": {
         "dto.LoginRequest": {
             "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
             "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.MonitorRequest": {
-            "type": "object",
-            "properties": {
-                "config": {
-                    "type": "string"
-                },
-                "interval": {
-                    "type": "integer"
-                },
-                "target": {
-                    "type": "string"
-                },
-                "type": {
-                    "$ref": "#/definitions/models.MonitorType"
-                }
-            }
-        },
-        "dto.RegisterRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
                 "password": {
                     "type": "string"
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.MonitorRequest": {
+            "type": "object"
+        },
+        "dto.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.CheckResult": {
+            "type": "object",
+            "properties": {
+                "checked_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "latency_ms": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "monitor_id": {
+                    "type": "integer"
+                },
+                "result_value": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/models.MonitorStatus"
+                },
+                "status_code": {
+                    "type": "integer"
                 }
             }
         },
@@ -400,6 +492,9 @@ const docTemplate = `{
                 },
                 "last_check_status": {
                     "$ref": "#/definitions/models.MonitorStatus"
+                },
+                "status_changed_at": {
+                    "type": "string"
                 },
                 "target": {
                     "type": "string"

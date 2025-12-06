@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ghduuep/pingly/internal/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -14,4 +15,24 @@ func CreateCheckResult(ctx context.Context, db *pgxpool.Pool, result *models.Che
 		return err
 	}
 	return nil
+}
+
+func GetLatestCheckResults(ctx context.Context, db *pgxpool.Pool, monitorID int) ([]*models.CheckResult, error) {
+	query := `SELECT id, monitor_id, status, latency_ms, status_code, result_value, message, checked_at 
+		FROM check_results 
+		WHERE monitor_id = $1 
+		ORDER BY checked_at DESC 
+		LIMIT $2`
+
+	rows, err := db.Query(ctx, query, monitorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	checks, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.CheckResult])
+	if err != nil {
+		return nil, err
+	}
+	return checks, nil
 }

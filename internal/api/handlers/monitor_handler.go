@@ -123,3 +123,37 @@ func (h *Handler) DeleteMonitor(c echo.Context) error {
 
 	return c.NoContent(http.StatusOK)
 }
+
+// @Summary Get monitor check results
+// @Description Retrieve the latest check results for a specific monitor.
+// @Tags monitors
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "Monitor ID"
+// @Success 200 {array} models.CheckResult
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /monitors/{id}/checks [get]
+func (h *Handler) GetMonitorChecks(c echo.Context) error {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
+	}
+
+	userID := getUserIdFromToken(c)
+
+	_, err = database.GetMonitorByIDAndUser(c.Request().Context(), h.DB, id, userID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
+	}
+
+	checks, err := database.GetLatestCheckResults(c.Request().Context(), h.DB, id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch results."})
+	}
+
+	return c.JSON(http.StatusOK, checks)
+}

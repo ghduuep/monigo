@@ -2,30 +2,48 @@ basePath: /api/v1
 definitions:
   dto.LoginRequest:
     properties:
-      email:
-        type: string
       password:
         type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
     type: object
   dto.MonitorRequest:
-    properties:
-      config:
-        type: string
-      interval:
-        type: integer
-      target:
-        type: string
-      type:
-        $ref: '#/definitions/models.MonitorType'
     type: object
   dto.RegisterRequest:
     properties:
       email:
         type: string
       password:
+        minLength: 6
         type: string
       username:
         type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  models.CheckResult:
+    properties:
+      checked_at:
+        type: string
+      id:
+        type: integer
+      latency_ms:
+        type: integer
+      message:
+        type: string
+      monitor_id:
+        type: integer
+      result_value:
+        type: string
+      status:
+        $ref: '#/definitions/models.MonitorStatus'
+      status_code:
+        type: integer
     type: object
   models.Monitor:
     properties:
@@ -41,6 +59,8 @@ definitions:
         type: string
       last_check_status:
         $ref: '#/definitions/models.MonitorStatus'
+      status_changed_at:
+        type: string
       target:
         type: string
       type:
@@ -248,6 +268,49 @@ paths:
       security:
       - BearerAuth: []
       summary: Get monitor by ID
+      tags:
+      - monitors
+  /monitors/{id}/checks:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the latest check results for a specific monitor.
+      parameters:
+      - description: Monitor ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.CheckResult'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get monitor check results
       tags:
       - monitors
   /register:

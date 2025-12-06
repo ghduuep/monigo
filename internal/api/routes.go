@@ -31,6 +31,7 @@ func SetupRotes(e *echo.Echo, db *pgxpool.Pool) {
 	protected.GET("/users/:id", handler.GetUserByID)
 	protected.GET("/monitors", handler.GetMonitors)
 	protected.GET("/monitors/:id", handler.GetMonitorByID)
+	protected.GET("/monitors/:id/checks", handler.GetMonitorChecks)
 
 	protected.POST("/monitors", handler.CreateMonitor)
 	protected.DELETE("/monitors/:id", handler.DeleteMonitor)
