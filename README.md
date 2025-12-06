@@ -1,6 +1,6 @@
-# Pingly 📡
+# Monigo 📡
 
-O **Pingly** é uma ferramenta robusta de monitorização de websites e registos DNS desenvolvida em Go. O sistema permite registar websites para verificação periódica de disponibilidade (HTTP) e monitorizar alterações críticas em registos DNS, notificando os utilizadores por e-mail sempre que ocorrem incidentes ou alterações inesperadas.
+O **Monigo** é uma ferramenta robusta de monitorização de websites e registos DNS desenvolvida em Go. O sistema permite registar websites para verificação periódica de disponibilidade (HTTP) e monitorizar alterações críticas em registos DNS, notificando os utilizadores por e-mail sempre que ocorrem incidentes ou alterações inesperadas.
 
 ## 🚀 Funcionalidades
 
