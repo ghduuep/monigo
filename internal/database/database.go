@@ -58,11 +58,11 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		status_changed_at TIMESTAMPTZ,
 		created_at TIMESTAMPTZ DEFAULT NOW(),
 
-		CONSTRAINT type_check CHECK (type IN ('http', 'dns', 'ping'))
+		CONSTRAINT type_check CHECK (type IN ('http', 'dns', 'ping')),
 		CONSTRAINT unique_monitor_per_user UNIQUE (user_id, target, type)
 	);
 
-	CREATE INDEX IF NOT EXISTS idx_monitors_user_id ON monitors(user_id)
+	CREATE INDEX IF NOT EXISTS idx_monitors_user_id ON monitors(user_id);
 
 	CREATE TABLE IF NOT EXISTS check_results (
 		id SERIAL PRIMARY KEY,
@@ -78,7 +78,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_check_results_monitor_date
-	ON check_results(monitor_id, checked_at DESC)
+	ON check_results(monitor_id, checked_at DESC);
 	`
 	_, err := pool.Exec(ctx, query)
 	return err
