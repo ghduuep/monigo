@@ -62,12 +62,13 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emailService *notification.EmailService) {
 	result := performCheck(*m)
 
+	var config models.DNSConfig
+
 	if m.Type == models.TypeDNS && result.Status == models.StatusUp && result.ResultValue != "" {
 		if err := database.SetInitialDNSConfig(ctx, db, m.ID, result.ResultValue); err != nil {
 			log.Printf("[ERROR] Failed to set initial DNS config: %v", err)
 		}
 
-		var config models.DNSConfig
 		if err := json.Unmarshal(m.Config, &config); err != nil {
 			log.Printf("[ERROR] Failed to unmarsh json config")
 			return
@@ -96,7 +97,6 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 			downtimeDuration = result.CheckedAt.Sub(*m.StatusChangedAt)
 		}
 
-		m.LastCheckStatus = result.Status
 		m.StatusChangedAt = &result.CheckedAt
 		if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
 			log.Printf("[ERROR] Failed to update monitor %d: %v", m.ID, err)
@@ -104,16 +104,15 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 
 		userEmail, _ := database.GetUserEmailByID(ctx, db, m.UserID)
 
-		var dnsConfig models.DNSConfig
-		json.Unmarshal(m.Config, &dnsConfig)
+		json.Unmarshal(m.Config, &config)
 
-		if userEmail != "" {
-			go func(mon models.Monitor, res models.CheckResult, duration time.Duration) {
-				if err := emailService.SendStatusAlert(userEmail, mon, res, dnsConfig.RecordType, duration); err != nil {
-					log.Printf("[ERROR] Failed to send e-mail: %v", err)
-				}
-			}(*m, result, downtimeDuration)
-		}
+		go func(mon models.Monitor, res models.CheckResult, duration time.Duration) {
+			if err := emailService.SendStatusAlert(userEmail, mon, res, config.RecordType, duration); err != nil {
+				log.Printf("[ERROR] Failed to send e-mail: %v", err)
+			}
+		}(*m, result, downtimeDuration)
+
+		m.LastCheckStatus = result.Status
 	}
 }
 
