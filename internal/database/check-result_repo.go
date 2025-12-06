@@ -5,6 +5,7 @@ import (
 
 	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/ghduuep/pingly/internal/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -44,4 +45,26 @@ func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int) (dto.
 	}
 
 	return stats, nil
+}
+
+func GetLastChecks(ctx context.Context, db *pgxpool.Pool, monitorID int) ([]*models.CheckResult, error) {
+	query := `SELECT id, monitor_id, status, result_value, message, status_code, latency_ms, checked_at
+	FROM check_results
+	WHERE monitor_id = $1
+	ORDER BY checked_at DESC
+	LIMIT 30
+	`
+
+	rows, err := db.Query(ctx, query, monitorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.CheckResult])
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }

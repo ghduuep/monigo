@@ -154,3 +154,25 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, stats)
 }
+
+func (h *Handler) GetMonitorLastChecks(c echo.Context) error {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
+	}
+
+	userID := getUserIdFromToken(c)
+
+	_, err = database.GetMonitorByIDAndUser(c.Request().Context(), h.DB, id, userID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
+	}
+
+	checks, err := database.GetLastChecks(c.Request().Context(), h.DB, id)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get checks."})
+	}
+
+	return c.JSON(http.StatusOK, checks)
+}
