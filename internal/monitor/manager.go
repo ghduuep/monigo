@@ -113,7 +113,7 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 		m.LastCheckStatus = result.Status
 	} else {
 		if err := database.UpdateLastCheck(ctx, db, m.ID); err != nil {
-			log.Printf("[ERROR] Failed to update last check for monitor %d.", m.ID)
+			log.Printf("[ERROR] Failed to update last check for monitor %d.: %v", m.ID, err)
 		}
 	}
 }

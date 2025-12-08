@@ -59,7 +59,7 @@ func UpdateMonitorStatus(ctx context.Context, db *pgxpool.Pool, monitorID int, s
 func UpdateLastCheck(ctx context.Context, db *pgxpool.Pool, monitorID int) error {
 	query := `UPDATE monitors SET last_check_at = NOW() WHERE id = $1`
 
-	_, err := db.Exec(ctx, query)
+	_, err := db.Exec(ctx, query, monitorID)
 	return err
 }
 
