@@ -97,7 +97,6 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 			downtimeDuration = result.CheckedAt.Sub(*m.StatusChangedAt)
 		}
 
-		m.StatusChangedAt = &result.CheckedAt
 		if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
 			log.Printf("[ERROR] Failed to update monitor %d: %v", m.ID, err)
 		}
@@ -111,6 +110,7 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 		}(*m, result, downtimeDuration)
 
 		m.LastCheckStatus = result.Status
+		m.StatusChangedAt = &result.CheckedAt
 	} else {
 		if err := database.UpdateLastCheck(ctx, db, m.ID); err != nil {
 			log.Printf("[ERROR] Failed to update last check for monitor %d.: %v", m.ID, err)
