@@ -40,7 +40,7 @@ func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.Che
 		color = "#e53e5e"
 		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
 	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
-		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", m.LastCheckAt.Format(timeLayout))
+		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", m.StatusChangedAt.Format(timeLayout))
 		timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
 
 		if d > 0 {
