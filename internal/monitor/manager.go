@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notification.EmailService) {
+func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notification.EmailService, notifiers map[string]notification.Notifier) {
 	activeMonitors := make(map[int]context.CancelFunc)
 
 	for {
@@ -28,7 +28,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notifi
 			if _, exists := activeMonitors[m.ID]; !exists {
 				monitorCtx, cancel := context.WithCancel(ctx)
 				activeMonitors[m.ID] = cancel
-				go runMonitorRoutine(monitorCtx, db, *m, emailService)
+				go runMonitorRoutine(monitorCtx, db, *m, emailService, notifiers)
 				log.Printf("Started monitoring for monitor ID %d", m.ID)
 			}
 		}
@@ -45,7 +45,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notifi
 	}
 }
 
-func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, emailService *notification.EmailService) {
+func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, emailService *notification.EmailService, notifiers map[string]notification.Notifier) {
 	ticker := time.NewTicker(m.Interval)
 	defer ticker.Stop()
 
@@ -54,12 +54,12 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			processCheck(ctx, db, &m, emailService)
+			processCheck(ctx, db, &m, emailService, notifiers)
 		}
 	}
 }
 
-func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emailService *notification.EmailService) {
+func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emailService *notification.EmailService, notifiers map[string]notification.Notifier) {
 	result := performCheck(*m)
 
 	var config models.DNSConfig
