@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"os"
 	"time"
@@ -47,6 +48,17 @@ func (h *Handler) Register(c echo.Context) error {
 
 	if err := database.CreateUser(c.Request().Context(), h.DB, &user); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "User already exists."})
+	}
+
+	defaultChannel := models.NotificationChannel{
+		UserID:  user.ID,
+		Type:    models.TypeEmail,
+		Target:  user.Email,
+		Enabled: true,
+	}
+
+	if err := database.CreateChannel(c.Request().Context(), h.DB, &defaultChannel); err != nil {
+		log.Printf("[ERROR] Failed to create default channel for user %d: %v", user.ID, err)
 	}
 
 	return c.NoContent(http.StatusCreated)

@@ -39,7 +39,7 @@ func GetAllMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.Monitor, e
 }
 
 func CreateMonitor(ctx context.Context, db *pgxpool.Pool, monitor *models.Monitor) error {
-	query := `INSERT INTO monitors (user_id, target, type, config, interval, timeout) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	query := `INSERT INTO monitors (user_id, target, type, config, interval, timeout) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	err := db.QueryRow(ctx, query, monitor.UserID, monitor.Target, monitor.Type, monitor.Config, monitor.Interval, monitor.Timeout).Scan(&monitor.ID)
 	if err != nil {
 		return err

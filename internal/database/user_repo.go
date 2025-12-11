@@ -76,7 +76,7 @@ func GetUserByUsername(ctx context.Context, db *pgxpool.Pool, username string) (
 }
 
 func GetUserChannels(ctx context.Context, db *pgxpool.Pool, userID int) ([]models.NotificationChannel, error) {
-	query := `SELECT type, target FROM user_channels WHERE user_id = $1 AND enabled = true`
+	query := `SELECT id, user_id, type, target, enabled FROM user_channels WHERE user_id = $1 AND enabled = true`
 
 	rows, err := db.Query(ctx, query, userID)
 	if err != nil {
@@ -90,4 +90,22 @@ func GetUserChannels(ctx context.Context, db *pgxpool.Pool, userID int) ([]model
 	}
 
 	return channels, nil
+}
+
+func CreateChannel(ctx context.Context, db *pgxpool.Pool, channel *models.NotificationChannel) error {
+	query := `INSERT INTO user_channels (user_id, type, target) VALUES ($1, $2, $3) RETURNING id`
+
+	err := db.QueryRow(ctx, query, channel.UserID, channel.Type, channel.Target).Scan(&channel.ID)
+	return err
+}
+
+func DeleteChannel(ctx context.Context, db *pgxpool.Pool, channelID int, userID int) error {
+	query := `DELETE FROM user_channels WHERE id = $1 AND user_id = $2`
+
+	_, err := db.Exec(ctx, query, channelID, userID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
