@@ -87,6 +87,7 @@ func (h *Handler) CreateMonitor(c echo.Context) error {
 		Type:      req.Type,
 		Config:    req.Config,
 		Interval:  req.Interval,
+		Timeout:   req.Timeout,
 		CreatedAt: time.Now(),
 	}
 

@@ -29,6 +29,7 @@ type MonitorRequest struct {
 	Type     models.MonitorType `json:"type" db:"type" validate:"required,oneof=http dns"`
 	Config   json.RawMessage    `json:"config" db:"config" swaggertype:"string"`
 	Interval time.Duration      `json:"interval" db:"interval" validate:"required,min=30000000000"`
+	Timeout  time.Duration      `json:"timeout" db:"timeout"`
 }
 
 type MonitorStatsResponse struct {
