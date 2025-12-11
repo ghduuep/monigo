@@ -1,7 +1,6 @@
 package notification
 
 import (
-	"fmt"
 	"log"
 	"time"
 
