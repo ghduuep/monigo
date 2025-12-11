@@ -81,13 +81,16 @@ func (h *Handler) CreateMonitor(c echo.Context) error {
 
 	userID := getUserIdFromToken(c)
 
+	intervalDuration, _ := time.ParseDuration(req.Interval)
+	timeoutDuration, _ := time.ParseDuration(req.Timeout)
+
 	monitor := models.Monitor{
 		UserID:    userID,
 		Target:    req.Target,
 		Type:      req.Type,
 		Config:    req.Config,
-		Interval:  req.Interval,
-		Timeout:   req.Timeout,
+		Interval:  intervalDuration,
+		Timeout:   timeoutDuration,
 		CreatedAt: time.Now(),
 	}
 
