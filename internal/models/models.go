@@ -53,7 +53,7 @@ type Monitor struct {
 	Type            MonitorType     `json:"type" db:"type"`
 	Config          json.RawMessage `json:"config" db:"config" swaggertype:"string"`
 	Interval        time.Duration   `json:"interval" db:"interval" swaggertype:"integer"`
-	Timeout         time.Duration   `json:"timeout" db:"timeout" swaggertype:integer`
+	Timeout         time.Duration   `json:"timeout" db:"timeout swaggertype:integer"`
 	LastCheckStatus MonitorStatus   `json:"last_check_status" db:"last_check_status"`
 	LastCheckAt     *time.Time      `json:"last_check_at" db:"last_check_at"`
 	StatusChangedAt *time.Time      `json:"status_changed_at" db:"status_changed_at"`
