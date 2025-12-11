@@ -90,9 +90,9 @@ func GetMonitorByIDAndUser(ctx context.Context, db *pgxpool.Pool, monitorID int,
 	query := `SELECT * FROM monitors WHERE id = $1 AND user_id = $2`
 
 	var monitor models.Monitor
-	err := db.QueryRow(ctx, query, monitorID, userID).Scan(&monitor.ID, &monitor.UserID, &monitor.Target, &monitor.Type, &monitor.Config, &monitor.Interval, &monitor.Timeout, &monitor.LastCheckStatus, &monitor.LastCheckAt, &monitor.CreatedAt)
+	err := db.QueryRow(ctx, query, monitorID, userID).Scan(&monitor.ID, &monitor.UserID, &monitor.Target, &monitor.Type, &monitor.Config, &monitor.Interval, &monitor.Timeout, &monitor.LastCheckStatus, &monitor.LastCheckAt, &monitor.StatusChangedAt, &monitor.CreatedAt)
 	if err != nil {
-		return models.Monitor{}, nil
+		return models.Monitor{}, err
 	}
 
 	return monitor, nil
