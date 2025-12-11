@@ -42,5 +42,5 @@ type MonitorStatsResponse struct {
 
 type CreateChannelRequest struct {
 	Type   string `json:"type" validate:"required,oneof="email telegram"`
-	Target string `json:"target" validate:required`
+	Target string `json:"target" validate:"required"`
 }
