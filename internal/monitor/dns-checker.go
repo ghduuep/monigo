@@ -22,7 +22,7 @@ func checkDNS(m models.Monitor) models.CheckResult {
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 			d := net.Dialer{
-				Timeout: 5 * time.Second,
+				Timeout: m.Timeout,
 			}
 			return d.DialContext(ctx, network, "8.8.8.8:53")
 		},

@@ -37,7 +37,7 @@ func SetupRotes(e *echo.Echo, db *pgxpool.Pool) {
 
 	protected.POST("/channels", handler.CreateChannel)
 	protected.POST("/monitors", handler.CreateMonitor)
-	protected.DELETE("/channels", handler.DeleteChannel)
+	protected.DELETE("/channels/:id", handler.DeleteChannel)
 	protected.DELETE("/monitors/:id", handler.DeleteMonitor)
 	protected.DELETE("/users/:id", handler.DeleteUser)
 }
