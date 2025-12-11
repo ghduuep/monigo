@@ -32,15 +32,13 @@ type MonitorRequest struct {
 }
 
 type MonitorStatsResponse struct {
-	MonitorID        int                  `json:"monitor_id"`
-	LastStatus       models.MonitorStatus `json:"last_status"`
-	LastCheckAt      *time.Time           `json:"last_check_at"`
-	UptimePercentage float64              `json:"uptime_percentage"`
-	AvgLatency       float64              `json:"avg_latency"`
-	Last24HChecks    int                  `json:"last_24h_checks"`
+	MonitorID        int     `json:"monitor_id"`
+	UptimePercentage float64 `json:"uptime_percentage"`
+	AvgLatency       float64 `json:"avg_latency"`
+	Last24HChecks    int     `json:"last_24h_checks"`
 }
 
 type CreateChannelRequest struct {
-	Type   string `json:"type" validate:"required,oneof="email telegram"`
+	Type   string `json:"type" validate:"required,oneof=email telegram"`
 	Target string `json:"target" validate:"required"`
 }
