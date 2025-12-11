@@ -18,8 +18,8 @@ type NotificationChannel struct {
 	ID      int              `json:"id" db:"id"`
 	UserID  int              `json:"user_id" db:"user_id"`
 	Type    NotificationType `json:"type" db:"type"`
-	Target  string           `json:"target", db:"target"`
-	Enabled bool             `json:"enabled", db:"enabled"`
+	Target  string           `json:"target" db:"target"`
+	Enabled bool             `json:"enabled" db:"enabled"`
 }
 
 type NotificationType string
