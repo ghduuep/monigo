@@ -9,7 +9,7 @@ import (
 )
 
 func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID int) ([]*models.Monitor, error) {
-	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, status_changed_at, created_at FROM monitors WHERE user_id = $1`
+	query := `SELECT id, user_id, target, type, config, interval, timeout, last_check_status, last_check_at, status_changed_at, created_at FROM monitors WHERE user_id = $1`
 	rows, err := db.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -24,7 +24,7 @@ func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID int) ([]*
 }
 
 func GetAllMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.Monitor, error) {
-	query := `SELECT id, user_id, target, type, config, interval, last_check_status, last_check_at, status_changed_at, created_at FROM monitors`
+	query := `SELECT id, user_id, target, type, config, interval, timeout, last_check_status, last_check_at, status_changed_at, created_at FROM monitors`
 	rows, err := db.Query(ctx, query)
 	if err != nil {
 		return nil, err
@@ -39,8 +39,8 @@ func GetAllMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.Monitor, e
 }
 
 func CreateMonitor(ctx context.Context, db *pgxpool.Pool, monitor *models.Monitor) error {
-	query := `INSERT INTO monitors (user_id, target, type, config, interval) VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	err := db.QueryRow(ctx, query, monitor.UserID, monitor.Target, monitor.Type, monitor.Config, monitor.Interval).Scan(&monitor.ID)
+	query := `INSERT INTO monitors (user_id, target, type, config, interval, timeout) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	err := db.QueryRow(ctx, query, monitor.UserID, monitor.Target, monitor.Type, monitor.Config, monitor.Interval, monitor.Timeout).Scan(&monitor.ID)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func GetMonitorByIDAndUser(ctx context.Context, db *pgxpool.Pool, monitorID int,
 	query := `SELECT * FROM monitors WHERE id = $1 AND user_id = $2`
 
 	var monitor models.Monitor
-	err := db.QueryRow(ctx, query, monitorID, userID).Scan(&monitor.ID, &monitor.UserID, &monitor.Target, &monitor.Type, &monitor.Config, &monitor.Interval, &monitor.LastCheckStatus, &monitor.LastCheckAt, &monitor.CreatedAt)
+	err := db.QueryRow(ctx, query, monitorID, userID).Scan(&monitor.ID, &monitor.UserID, &monitor.Target, &monitor.Type, &monitor.Config, &monitor.Interval, &monitor.Timeout, &monitor.LastCheckStatus, &monitor.LastCheckAt, &monitor.CreatedAt)
 	if err != nil {
 		return models.Monitor{}, nil
 	}

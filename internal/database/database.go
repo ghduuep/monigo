@@ -46,12 +46,13 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 	);
 
 
-	CREATE TABLE IF NO EXISTS user_channels (
+	CREATE TABLE IF NOT EXISTS user_channels (
 		id SERIAL PRIMARY KEY,
-		user_id INTEGER REFERENTES users(id) ON DELETE CASCADE,
+		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
 		type VARCHAR(20) NOT NULL,
+		target VARCHAR(255) NOT NULL,
 		enabled BOOLEAN DEFAULT TRUE,
-		created_at TIMESTAMPZ DEFAULT NOW(),
+		created_at TIMESTAMPTZ DEFAULT NOW(),
 
 		CONSTRAINT unique_channel_target UNIQUE (user_id, type, target)
 	);
