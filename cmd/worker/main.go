@@ -22,6 +22,12 @@ func main() {
 		os.Getenv("EMAIL_SENDER"),
 	)
 
+	telegramService := notification.NewTelegramService(
+		os.Getenv("TELEGRAM_BOT_TOKEN")
+	)
+
+	dispatcher := notification.NewDispatcher(emailService, telegramService)
+
 	db := database.InitDB()
 	defer db.Close()
 
@@ -30,7 +36,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go monitor.StartMonitoring(ctx, db, emailService)
+	go monitor.StartMonitoring(ctx, db, dispatcher)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)

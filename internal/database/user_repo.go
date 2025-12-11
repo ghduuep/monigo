@@ -74,3 +74,20 @@ func GetUserByUsername(ctx context.Context, db *pgxpool.Pool, username string) (
 
 	return user, err
 }
+
+func GetUserChannels(ctx context.Context, db *pgxpool.Pool, userID int) ([]models.NotificationChannel, error) {
+	query := `SELECT type, target FROM user_channels WHERE user_id = $1 AND enabled = true`
+
+	rows, err := db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	channels, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.NotificationChannel])
+	if err != nil {
+		return nil, err
+	}
+
+	return channels, nil
+}

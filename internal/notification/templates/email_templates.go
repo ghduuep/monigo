@@ -1,4 +1,4 @@
-package notification
+package templates
 
 import (
 	"fmt"
@@ -7,37 +7,16 @@ import (
 	"github.com/ghduuep/pingly/internal/models"
 )
 
-func (s *EmailService) SendStatusAlert(userEmail string, m models.Monitor, result models.CheckResult, dnsType string, duration time.Duration) error {
-
-	if m.Type == models.TypeHTTP {
-		return s.sendHTTPAlert(userEmail, m, result, duration)
-	}
-
-	if m.Type == models.TypeDNS {
-
-		if result.Status == models.StatusUp {
-			return s.sendDNSDetectedAlert(userEmail, m, result, dnsType)
-		}
-
-		if result.Status == models.StatusDown && result.ResultValue != "" {
-			return s.sendDNSChangedAlert(userEmail, m, result, dnsType)
-		}
-
-		return s.sendDNSStatusAlert(userEmail, m, result, dnsType)
-	}
-
-	return nil
-}
-
-func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.CheckResult, d time.Duration) error {
+func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
 	emoji := "🟢"
-	color := "#38a169"
+	color := "#38a169" // Verde
 
 	timeLayout := "02/01/2006 15:04:05"
 	var timeDetails string
+
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
-		color = "#e53e5e"
+		color = "#e53e5e" // Vermelho
 		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
 	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
 		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", m.StatusChangedAt.Format(timeLayout))
@@ -47,7 +26,9 @@ func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.Che
 			timeDetails += fmt.Sprintf("<p><strong>Duração:</strong> %s</p>", d.Round(time.Second).String())
 		}
 	}
+
 	subject := fmt.Sprintf("%s %s está %s", emoji, m.Target, res.Status)
+
 	body := fmt.Sprintf(`
 		<h2>Atualização de Status HTTP</h2>
 		<p>O monitor <strong>%s</strong> mudou para <span style="color:%s"><strong>%s</strong></span>.</p>
@@ -56,30 +37,30 @@ func (s *EmailService) sendHTTPAlert(to string, m models.Monitor, res models.Che
 		%s
 	`, m.Target, color, res.Status, res.Message, res.Latency, timeDetails)
 
-	return s.SendEmail(to, subject, body)
+	return subject, body
 }
 
-func (s *EmailService) sendDNSStatusAlert(to string, m models.Monitor, res models.CheckResult, dnsType string) error {
+func BuildEmailDNSStatusMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
 	subject := fmt.Sprintf("⚠️ Falha de DNS Tipo %s: %s", dnsType, m.Target)
 
 	body := fmt.Sprintf(`
 		<h2>Problema de Resolução DNS Tipo %s</h2>
-		<p>Não foi possível verificar os registros DNS para <strong>%s</strong>.</p>
+		<p>Não foi possível verificar os registos DNS para <strong>%s</strong>.</p>
 		<p><strong>Status:</strong> %s</p>
 		<p><strong>Erro Técnico:</strong> %s</p>
-		<p><em>Verifique se o domínio expirou ou se os servidores de nome estão respondendo.</em></p>
+		<p><em>Verifique se o domínio expirou ou se os servidores de nome estão a responder.</em></p>
 	`, dnsType, m.Target, res.Status, res.Message)
 
-	return s.SendEmail(to, subject, body)
+	return subject, body
 }
 
-func (s *EmailService) sendDNSChangedAlert(to string, m models.Monitor, res models.CheckResult, dnsType string) error {
+func BuildEmailDNSChangedMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
 	subject := fmt.Sprintf("🚨 DNS tipo %s de %s foi Alterado!", dnsType, m.Target)
 
 	body := fmt.Sprintf(`
 		<div style="border: 2px solid red; padding: 15px; background-color: #fff5f5;">
-			<h2 style="color: red;">Alteração de Registro Detectada</h2>
-			<p>O registro DNS Tipo %s monitorado não corresponde à configuração esperada.</p>
+			<h2 style="color: red;">Alteração de Registo Detectada</h2>
+			<p>O registo DNS Tipo %s monitorizado não corresponde à configuração esperada.</p>
 			
 			<ul>
 				<li><strong>Alvo:</strong> %s</li>
@@ -88,20 +69,20 @@ func (s *EmailService) sendDNSChangedAlert(to string, m models.Monitor, res mode
 				<li><strong>Detectado em: %s</strong></li>
 			</ul>
 
-			<p><strong>Ação Recomendada:</strong> Verifique imediatamente se o seu domínio foi comprometido ou se houve uma atualização não planejada.</p>
+			<p><strong>Ação Recomendada:</strong> Verifique imediatamente se o seu domínio foi comprometido ou se houve uma atualização não planeada.</p>
 		</div>
-	`, dnsType, m.Target, res.ResultValue, res.Message, res.CheckedAt)
+	`, dnsType, m.Target, res.ResultValue, res.Message, res.CheckedAt.Format("02/01/2006 15:04:05"))
 
-	return s.SendEmail(to, subject, body)
+	return subject, body
 }
 
-func (s *EmailService) sendDNSDetectedAlert(to string, m models.Monitor, res models.CheckResult, dnsType string) error {
+func BuildEmailDNSDetectedMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
 	subject := fmt.Sprintf("🟢 DNS Tipo %s Detectado: %s", dnsType, m.Target)
 
 	body := fmt.Sprintf(`
 		<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #38a169; border-radius: 5px; background-color: #f0fff4;">
-			<h2 style="color: #38a169;">Monitoramento DNS Tipo %s Ativo</h2>
-			<p>O monitoramento para <strong>%s</strong> foi atualizado com sucesso.</p>
+			<h2 style="color: #38a169;">Monitorização DNS Tipo %s Ativa</h2>
+			<p>A monitorização para <strong>%s</strong> foi atualizada com sucesso.</p>
 			
 			<ul>
 				<li><strong>Status:</strong> <span style="color: #38a169; font-weight: bold;">UP (Ativo)</span></li>
@@ -112,5 +93,5 @@ func (s *EmailService) sendDNSDetectedAlert(to string, m models.Monitor, res mod
 		</div>
 	`, dnsType, m.Target, res.ResultValue)
 
-	return s.SendEmail(to, subject, body)
+	return subject, body
 }

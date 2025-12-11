@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-
+	"github.com/ghduuep/pingly/internal/models"
+	"github.com/ghduuep/pingly/internal/notification/templates"
 	"github.com/resend/resend-go/v3"
+	"net/http"
+	"time"
 )
 
 type Notifier interface {
@@ -43,6 +45,32 @@ func (s *EmailService) Send(to, subject, body string) error {
 	return nil
 }
 
+func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result models.CheckResult, duration time.Duration) error {
+	var subject, body string
+
+	if m.Type == models.TypeHTTP {
+		subject, body = templates.BuildEmailHTTPMessage(m, result, duration)
+	} else if m.Type == models.TypeDNS {
+		var config models.DNSConfig
+		var dnsType string
+		if err := json.Unmarshal(m.Config, &config); err == nil {
+			dnsType = config.RecordType
+		} else {
+			dnsType = "N/A"
+		}
+
+		if result.Status == models.StatusUp {
+			subject, body = templates.BuildEmailDNSDetectedMessage(m, result, dnsType)
+		} else if result.Status == models.StatusDown && result.ResultValue != "" {
+			subject, body = templates.BuildEmailDNSChangedMessage(m, result, dnsType)
+		} else {
+			subject, body = templates.BuildEmailDNSStatusMessage(m, result, dnsType)
+		}
+	}
+
+	return s.Send(to, subject, body)
+}
+
 type TelegramService struct {
 	BotToken string
 }
@@ -63,4 +91,25 @@ func (t *TelegramService) Send(to, subject, body string) error {
 	data, _ := json.Marshal(payload)
 	_, err := http.Post(url, "application/json", bytes.NewBuffer(data))
 	return err
+}
+
+func (t *TelegramService) SendStatusAlert(chatID string, m models.Monitor, result models.CheckResult, duration time.Duration) error {
+	var subject, body string
+
+	if m.Type == models.TypeHTTP {
+		subject, body = templates.BuildTelegramHTTPMessage(m, result, duration)
+	} else if m.Type == models.TypeDNS {
+		var config models.DNSConfig
+		json.Unmarshal(m.Config, &config)
+
+		if result.Status == models.StatusUp {
+			subject, body = templates.BuildTelegramDNSDetectedMessage(m, result, config.RecordType)
+		} else if result.Status == models.StatusDown && result.ResultValue != "" {
+			subject, body = templates.BuildTelegramDNSChangedMessage(m, result, config.RecordType)
+		} else {
+			subject, body = templates.BuildTelegramDNSStatusMessage(m, result, config.RecordType)
+		}
+	}
+
+	return t.Send(chatID, subject, body)
 }

@@ -46,6 +46,16 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 	);
 
 
+	CREATE TABLE IF NO EXISTS user_channels (
+		id SERIAL PRIMARY KEY,
+		user_id INTEGER REFERENTES users(id) ON DELETE CASCADE,
+		type VARCHAR(20) NOT NULL,
+		enabled BOOLEAN DEFAULT TRUE,
+		created_at TIMESTAMPZ DEFAULT NOW(),
+
+		CONSTRAINT unique_channel_target UNIQUE (user_id, type, target)
+	);
+
 	CREATE TABLE IF NOT EXISTS monitors (
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -53,6 +63,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		type VARCHAR(10) NOT NULL,
 		config JSONB DEFAULT '{}'::jsonb,
 		interval INTERVAL NOT NULL,
+		timeout INTERVAL NOT NULL DEFAULT INTERVAL '30 seconds',
 		last_check_status VARCHAR(10) DEFAULT 'unknown',
 		last_check_at TIMESTAMPTZ,
 		status_changed_at TIMESTAMPTZ,

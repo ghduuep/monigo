@@ -9,7 +9,7 @@ import (
 
 func checkHTTP(m models.Monitor) models.CheckResult {
 	client := http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: m.Timeout,
 	}
 
 	start := time.Now()

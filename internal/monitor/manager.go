@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notification.EmailService, notifiers map[string]notification.Notifier) {
+func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notification.NotificationDispatcher) {
 	activeMonitors := make(map[int]context.CancelFunc)
 
 	for {
@@ -28,7 +28,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notifi
 			if _, exists := activeMonitors[m.ID]; !exists {
 				monitorCtx, cancel := context.WithCancel(ctx)
 				activeMonitors[m.ID] = cancel
-				go runMonitorRoutine(monitorCtx, db, *m, emailService, notifiers)
+				go runMonitorRoutine(monitorCtx, db, *m, dispatcher)
 				log.Printf("Started monitoring for monitor ID %d", m.ID)
 			}
 		}
@@ -45,7 +45,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, emailService *notifi
 	}
 }
 
-func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, emailService *notification.EmailService, notifiers map[string]notification.Notifier) {
+func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, dispatcher notification.NotificationDispatcher) {
 	ticker := time.NewTicker(m.Interval)
 	defer ticker.Stop()
 
@@ -54,12 +54,12 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			processCheck(ctx, db, &m, emailService, notifiers)
+			processCheck(ctx, db, &m, dispatcher)
 		}
 	}
 }
 
-func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emailService *notification.EmailService, notifiers map[string]notification.Notifier) {
+func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, dispatcher notification.NotificationDispatcher) {
 	result := performCheck(*m)
 
 	var config models.DNSConfig
@@ -101,13 +101,12 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, emai
 			log.Printf("[ERROR] Failed to update monitor %d: %v", m.ID, err)
 		}
 
-		userEmail, _ := database.GetUserEmailByID(ctx, db, m.UserID)
+		channels, err := database.GetUserChannels(ctx, db, m.UserID)
+		if err != nil {
+			log.Printf("[ERROR] Failed to fetch user channels: %v", err)
+		}
 
-		go func(mon models.Monitor, res models.CheckResult, duration time.Duration) {
-			if err := emailService.SendStatusAlert(userEmail, mon, res, config.RecordType, duration); err != nil {
-				log.Printf("[ERROR] Failed to send e-mail: %v", err)
-			}
-		}(*m, result, downtimeDuration)
+		go dispatcher.SendAlert(channels, *m, result, downtimeDuration)
 
 		m.LastCheckStatus = result.Status
 		m.StatusChangedAt = &result.CheckedAt
