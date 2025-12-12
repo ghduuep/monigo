@@ -38,6 +38,9 @@ func main() {
 	db := database.InitDB()
 	defer db.Close()
 
+	rdb := database.InitRedis()
+	defer rdb.Close()
+
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -47,7 +50,7 @@ func main() {
 
 	e.Validator = &api.CustomValidator{Validator: validator.New()}
 
-	api.SetupRotes(e, db)
+	api.SetupRotes(e, db, rdb)
 
 	port := ":8080"
 	log.Printf("API server is running on port %s", port)
