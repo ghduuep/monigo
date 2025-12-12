@@ -97,12 +97,18 @@ func (t *TelegramService) Send(to, subject, body string) error {
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.BotToken)
 
 	payload := map[string]string{
-		"chat_id": to,
-		"text":    msg,
+		"chat_id":    to,
+		"text":       msg,
+		"parse_mode": "Markdown",
 	}
 
 	data, _ := json.Marshal(payload)
-	_, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
 	return err
 }
 
