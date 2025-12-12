@@ -75,3 +75,12 @@ type DNSConfig struct {
 	RecordType    string `json:"record_type"`
 	ExpectedValue string `json:"expected_value"`
 }
+
+type Incident struct {
+	ID         int            `json:"id" db:"id"`
+	MonitorID  int            `json:"monitor_id" db:"monitor_id"`
+	StartedAt  time.Time      `json:"started_at" db:"started_at"`
+	ResolvedAt *time.Time     `json:"resolved_at" db:"resolved_at"`
+	Duration   *time.Duration `json:"duration" db:"duration"`
+	ErrorCause string         `json:"error_cause" db:"error_cause"`
+}

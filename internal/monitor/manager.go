@@ -72,17 +72,14 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 		if err := json.Unmarshal(m.Config, &config); err != nil {
 			log.Printf("[ERROR] Failed to unmarsh json config")
 			return
+		} else {
+			if config.ExpectedValue == "" {
+				log.Printf("[INFO] Learning DNS value for monitor %d: %s", m.ID, result.ResultValue)
+				config.ExpectedValue = result.ResultValue
+				newJSON, _ := json.Marshal(config)
+				m.Config = newJSON
+			}
 		}
-
-		if config.ExpectedValue != "" {
-			return
-		}
-
-		log.Printf("[INFO] Learning DNS value for monitor %d: %s", m.ID, result.ResultValue)
-
-		config.ExpectedValue = result.ResultValue
-		newJSON, _ := json.Marshal(config)
-		m.Config = newJSON
 	}
 
 	if err := database.CreateCheckResult(ctx, db, &result); err != nil {
@@ -91,22 +88,25 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 
 	if result.Status != m.LastCheckStatus && result.Status != models.StatusUnknown {
 		log.Printf("[LOG] Monitor %d has changed from %s to %s", m.ID, m.LastCheckStatus, result.Status)
+		var dbErr error
+		var incident *models.Incident
 
-		var downtimeDuration time.Duration
+		if result.Status == models.StatusDown {
+			incident, dbErr = database.CreateIncident(ctx, db, m.ID, result.Message)
+		}
+
 		if m.StatusChangedAt != nil && m.LastCheckStatus == models.StatusDown && result.Status == models.StatusUp {
-			downtimeDuration = result.CheckedAt.Sub(*m.StatusChangedAt)
+			incident, dbErr = database.ResolveIncident(ctx, db, m.ID)
 		}
 
 		if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
 			log.Printf("[ERROR] Failed to update monitor %d: %v", m.ID, err)
 		}
 
-		channels, err := database.GetUserChannels(ctx, db, m.UserID)
-		if err != nil {
-			log.Printf("[ERROR] Failed to fetch user channels: %v", err)
+		if incident != nil {
+			channels, _ := database.GetUserChannels(ctx, db, m.UserID)
+			go dispatcher.SendAlert(channels, *m, result, incident)
 		}
-
-		go dispatcher.SendAlert(channels, *m, result, downtimeDuration)
 
 		m.LastCheckStatus = result.Status
 		m.StatusChangedAt = &result.CheckedAt

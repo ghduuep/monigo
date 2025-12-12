@@ -3,29 +3,43 @@ package database
 import (
 	"context"
 
+	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func CreateIncident(ctx context.Context, db *pgxpool.Pool, monitorID int, cause string) error {
-	queryCheck := `SELECT id FROM incidents WHERE monitor_id = $1 AND resolved_at IS NULL`
-	var existingID int
-	err := db.QueryRow(ctx, queryCheck, monitorID).Scan(&existingID)
-	if err == nil {
-		return nil
+func CreateIncident(ctx context.Context, db *pgxpool.Pool, monitorID int, cause string) (*models.Incident, error) {
+	var exists int
+	_ = db.QueryRow(ctx, "SELECT 1 FROM incidents WHERE monitor_id = $1 AND resolved_at IS NULL", monitorID).Scan(&exists)
+	if exists == 1 {
+		return nil, nil // Já existe, ignora ou retorna erro
 	}
 
-	query := `INSERT INTO incidents (monitor_id, started_at, error_cause) VALUES ($1, NOW(), $2)`
-	_, err = db.Exec(ctx, query, monitorID, cause)
-	return err
+	query := `INSERT INTO incidents (monitor_id, started_at, error_cause) 
+	          VALUES ($1, NOW(), $2) 
+	          RETURNING id, monitor_id, started_at, error_cause`
+
+	var inc models.Incident
+	err := db.QueryRow(ctx, query, monitorID, cause).Scan(&inc.ID, &inc.MonitorID, &inc.StartedAt, &inc.ErrorCause)
+	if err != nil {
+		return nil, err
+	}
+	return &inc, nil
 }
 
-func ResolveIncident(ctx context.Context, db *pgxpool.Pool, monitorID int) error {
+func ResolveIncident(ctx context.Context, db *pgxpool.Pool, monitorID int) (*models.Incident, error) {
 	query := `
-        UPDATE incidents 
-        SET resolved_at = NOW(),
-            duration = NOW() - started_at
-        WHERE monitor_id = $1 AND resolved_at IS NULL
-    `
-	_, err := db.Exec(ctx, query, monitorID)
-	return err
+		UPDATE incidents 
+		SET resolved_at = NOW(),
+		    duration = NOW() - started_at
+		WHERE monitor_id = $1 AND resolved_at IS NULL
+		RETURNING id, monitor_id, started_at, resolved_at, duration, error_cause
+	`
+	var inc models.Incident
+	err := db.QueryRow(ctx, query, monitorID).Scan(
+		&inc.ID, &inc.MonitorID, &inc.StartedAt, &inc.ResolvedAt, &inc.Duration, &inc.ErrorCause,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &inc, nil
 }

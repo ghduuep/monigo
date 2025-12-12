@@ -56,11 +56,11 @@ func (s *EmailService) Send(to, subject, body string) error {
 	return smtp.SendMail(addr, auth, s.Sender, []string{to}, []byte(message))
 }
 
-func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result models.CheckResult, duration time.Duration) error {
+func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result models.CheckResult, inc *models.Incident) error {
 	var subject, body string
 
 	if m.Type == models.TypeHTTP {
-		subject, body = templates.BuildEmailHTTPMessage(m, result, duration)
+		subject, body = templates.BuildEmailHTTPMessage(m, result, inc)
 	} else if m.Type == models.TypeDNS {
 		var config models.DNSConfig
 		var dnsType string
@@ -78,7 +78,7 @@ func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result model
 			subject, body = templates.BuildEmailDNSStatusMessage(m, result, dnsType)
 		}
 	} else if m.Type == models.TypePort {
-		subject, body = templates.BuildEmailPortMessage(m, result, duration)
+		subject, body = templates.BuildEmailPortMessage(m, result, inc)
 	}
 
 	return s.Send(to, subject, body)
@@ -112,11 +112,11 @@ func (t *TelegramService) Send(to, subject, body string) error {
 	return err
 }
 
-func (t *TelegramService) SendStatusAlert(chatID string, m models.Monitor, result models.CheckResult, duration time.Duration) error {
+func (t *TelegramService) SendStatusAlert(chatID string, m models.Monitor, result models.CheckResult, inc *models.Incident) error {
 	var subject, body string
 
 	if m.Type == models.TypeHTTP {
-		subject, body = templates.BuildTelegramHTTPMessage(m, result, duration)
+		subject, body = templates.BuildTelegramHTTPMessage(m, result, inc)
 	} else if m.Type == models.TypeDNS {
 		var config models.DNSConfig
 		json.Unmarshal(m.Config, &config)
@@ -129,7 +129,7 @@ func (t *TelegramService) SendStatusAlert(chatID string, m models.Monitor, resul
 			subject, body = templates.BuildTelegramDNSStatusMessage(m, result, config.RecordType)
 		}
 	} else if m.Type == models.TypePort {
-		subject, body = templates.BuildTelegramPortMessage(m, result, duration)
+		subject, body = templates.BuildTelegramPortMessage(m, result, inc)
 	}
 
 	return t.Send(chatID, subject, body)
@@ -164,11 +164,11 @@ func (s *SMSService) Send(to, body string) error {
 	return err
 }
 
-func (s *SMSService) SendStatusAlert(to string, m models.Monitor, result models.CheckResult, duration time.Duration) error {
+func (s *SMSService) SendStatusAlert(to string, m models.Monitor, result models.CheckResult, inc *models.Incident) error {
 	var body string
 
 	if m.Type == models.TypeHTTP {
-		body = templates.BuildSMSHTTPMessage(m, result, duration)
+		body = templates.BuildSMSHTTPMessage(m, result, inc)
 	} else if m.Type == models.TypeDNS {
 		var config models.DNSConfig
 		json.Unmarshal(m.Config, &config)
@@ -181,7 +181,7 @@ func (s *SMSService) SendStatusAlert(to string, m models.Monitor, result models.
 			body = templates.BuildSMSDNSStatusMessage(m, result, config.RecordType)
 		}
 	} else if m.Type == models.TypePort {
-		body = templates.BuildSMSPortMessage(m, result, duration)
+		body = templates.BuildSMSPortMessage(m, result, inc)
 	}
 
 	return s.Send(to, body)
