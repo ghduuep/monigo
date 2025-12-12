@@ -68,3 +68,34 @@ func BuildTelegramDNSStatusMessage(m models.Monitor, res models.CheckResult, dns
 
 	return subject, body
 }
+
+func BuildTelegramPingMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
+	var emoji, statusText string
+
+	if res.Status == models.StatusDown {
+		emoji = "🔴"
+		statusText = "FALHA DE CONEXÃO"
+	} else {
+		emoji = "🟢"
+		statusText = "CONECTADO"
+	}
+
+	subject := fmt.Sprintf("%s Ping/TCP: %s", emoji, m.Target)
+
+	body := fmt.Sprintf("\n\n📊 *Status:* %s", statusText)
+	body += fmt.Sprintf("\n🔍 *Target:* `%s`", m.Target)
+	body += fmt.Sprintf("\n💬 *Mensagem:* %s", res.Message)
+	body += fmt.Sprintf("\n⚡ *Latência:* %dms", res.Latency)
+
+	timeLayout := "02/01 15:04:05"
+	if res.Status == models.StatusDown {
+		body += fmt.Sprintf("\n🕒 *Começou em:* %s", res.CheckedAt.Format(timeLayout))
+	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
+		body += fmt.Sprintf("\n🕒 *Resolvido em:* %s", res.CheckedAt.Format(timeLayout))
+		if d > 0 {
+			body += fmt.Sprintf("\n⏱ *Duração:* %s", d.Round(time.Second).String())
+		}
+	}
+
+	return subject, body
+}

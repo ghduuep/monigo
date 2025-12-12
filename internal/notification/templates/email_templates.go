@@ -95,3 +95,44 @@ func BuildEmailDNSDetectedMessage(m models.Monitor, res models.CheckResult, dnsT
 
 	return subject, body
 }
+
+func BuildEmailPingMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
+	emoji := "🟢"
+	color := "#38a169" // Verde
+	statusText := "CONECTADO"
+
+	timeLayout := "02/01/2006 15:04:05"
+	var timeDetails string
+
+	if res.Status == models.StatusDown {
+		emoji = "🔴"
+		color = "#e53e5e" // Vermelho
+		statusText = "FALHA"
+		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
+	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
+		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", m.StatusChangedAt.Format(timeLayout))
+		timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
+
+		if d > 0 {
+			timeDetails += fmt.Sprintf("<p><strong>Tempo de inatividade:</strong> %s</p>", d.Round(time.Second).String())
+		}
+	}
+
+	subject := fmt.Sprintf("%s Ping/TCP %s: %s", emoji, m.Target, statusText)
+
+	body := fmt.Sprintf(`
+		<h2>Atualização de Conectividade (Ping/TCP)</h2>
+		<p>O monitor <strong>%s</strong> reportou o estado: <span style="color:%s"><strong>%s</strong></span>.</p>
+		
+		<div style="border-left: 4px solid %s; padding-left: 10px; margin: 15px 0;">
+			<p><strong>Target:</strong> %s</p>
+			<p><strong>Mensagem:</strong> %s</p>
+			<p><strong>Latência:</strong> %vms</p>
+		</div>
+
+		%s
+		<p style="font-size: 12px; color: #666;">Verificação realizada via TCP Handshake.</p>
+	`, m.Target, color, statusText, color, m.Target, res.Message, res.Latency, timeDetails)
+
+	return subject, body
+}
