@@ -70,7 +70,6 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		status_changed_at TIMESTAMPTZ,
 		created_at TIMESTAMPTZ DEFAULT NOW(),
 
-		CONSTRAINT type_check CHECK (type IN ('http', 'dns', 'ping')),
 		CONSTRAINT unique_monitor_per_user UNIQUE (user_id, target, type)
 	);
 
