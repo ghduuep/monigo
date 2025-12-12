@@ -151,6 +151,7 @@ func (s *SMSService) Send(to, body string) error {
 
 	params := &twilioApi.CreateMessageParams{}
 	params.SetTo(to)
+	params.SetFrom(s.FromNumber)
 	params.SetBody(body)
 
 	_, err := client.Api.CreateMessage(params)
