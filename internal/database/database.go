@@ -68,7 +68,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		last_check_status VARCHAR(10) DEFAULT 'unknown',
 		last_check_at TIMESTAMPTZ,
 		status_changed_at TIMESTAMPTZ,
-		created_at TIMESTAMPTZ DEFAULT NOW(),
+		created_at TIMESTAMPTZ DEFAULT NOW()
 
 		);
 
