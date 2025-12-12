@@ -11,16 +11,15 @@ import (
 )
 
 func InitRedis() *redis.Client {
-	redisAddr := os.Getenv("REDIS_ADDR")
-	if redisAddr == "" {
-		redisAddr = "localhost:6379"
-	}
+	redisUrl := os.Getenv("REDIS_URL")
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr: redisAddr,
-	})
+	var opts *redis.Options
+	var err error
 
-	_, err := rdb.Ping(context.Background()).Result()
+	opts, _ = redis.ParseURL(redisUrl)
+	rdb := redis.NewClient(opts)
+
+	_, err = rdb.Ping(context.Background()).Result()
 	if err != nil {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
