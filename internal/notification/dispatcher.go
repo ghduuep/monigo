@@ -28,25 +28,27 @@ func (d *NotificationDispatcher) SendAlert(channels []models.NotificationChannel
 		switch ch.Type {
 		case models.TypeEmail:
 			go func(target string) {
-				d.Email.SendStatusAlert(target, m, res, duration)
+				if err = d.Email.SendStatusAlert(target, m, res, duration); err != nil {
+					log.Printf("[ERROR] Failed to send email notification to %s: %v", target, err)
+				}
 			}(ch.Target)
 
 		case models.TypeTelegram:
 			go func(target string) {
-				d.Telegram.SendStatusAlert(target, m, res, duration)
+				if err = d.Telegram.SendStatusAlert(target, m, res, duration); err != nil {
+					log.Printf("[ERROR] Failed to send telegram notification to %s: %v", target, err)
+				}
 			}(ch.Target)
 
 		case models.TypeSMS:
 			go func(target string) {
-				d.SMS.SendStatusAlert(target, m, res, duration)
+				if err = d.SMS.SendStatusAlert(target, m, res, duration); err != nil {
+					log.Printf("[ERROR] Failed to send SMS notification to %s: %v", target, err)
+				}
 			}(ch.Target)
 
 		default:
 			log.Printf("[ERROR] Unknown channel: %s", ch.Type)
-		}
-
-		if err != nil {
-			log.Printf("[ERROR] Failed to send %s notification to %s", ch.Type, ch.Target)
 		}
 	}
 }
