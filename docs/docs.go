@@ -23,6 +23,90 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/channels": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List all notification channels configured by the user",
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Get user channels",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.NotificationChannel"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add a new notification channel (email, telegram)",
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Create channel",
+                "parameters": [
+                    {
+                        "description": "Channel Info",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateChannelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.NotificationChannel"
+                        }
+                    }
+                }
+            }
+        },
+        "/channels/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Remove a notification channel",
+                "tags": [
+                    "channels"
+                ],
+                "summary": "Delete channel",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Channel ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
         "/login": {
             "post": {
                 "description": "Authenticate a user and return a JWT token.",
@@ -85,6 +169,21 @@ const docTemplate = `{
                         }
                     }
                 }
+            }
+        },
+        "/logout": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invalida o token JWT atual adicionando-o à lista negra no Redis.",
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout user",
+                "responses": {}
             }
         },
         "/monitors": {
@@ -287,14 +386,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/monitors/{id}/checks": {
+        "/monitors/{id}/stats": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve the latest check results for a specific monitor.",
+                "description": "Get uptime and latency stats for a monitor",
                 "consumes": [
                     "application/json"
                 ],
@@ -304,7 +403,7 @@ const docTemplate = `{
                 "tags": [
                     "monitors"
                 ],
-                "summary": "Get monitor check results",
+                "summary": "Get monitor stats",
                 "parameters": [
                     {
                         "type": "integer",
@@ -318,37 +417,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.CheckResult"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/dto.MonitorStatsResponse"
                         }
                     }
                 }
@@ -405,6 +474,25 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.CreateChannelRequest": {
+            "type": "object",
+            "required": [
+                "target",
+                "type"
+            ],
+            "properties": {
+                "target": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "email",
+                        "telegram"
+                    ]
+                }
+            }
+        },
         "dto.LoginRequest": {
             "type": "object",
             "required": [
@@ -421,7 +509,72 @@ const docTemplate = `{
             }
         },
         "dto.MonitorRequest": {
-            "type": "object"
+            "type": "object",
+            "required": [
+                "interval",
+                "target",
+                "timeout",
+                "type"
+            ],
+            "properties": {
+                "config": {
+                    "type": "string"
+                },
+                "interval": {
+                    "type": "string",
+                    "enum": [
+                        "30s",
+                        "1m",
+                        "5m",
+                        "30m",
+                        "1h",
+                        "12h",
+                        "24h"
+                    ]
+                },
+                "target": {
+                    "type": "string"
+                },
+                "timeout": {
+                    "type": "string",
+                    "enum": [
+                        "1s",
+                        "15s",
+                        "30s",
+                        "45s",
+                        "60s"
+                    ]
+                },
+                "type": {
+                    "enum": [
+                        "http",
+                        "dns",
+                        "ping"
+                    ],
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.MonitorType"
+                        }
+                    ]
+                }
+            }
+        },
+        "dto.MonitorStatsResponse": {
+            "type": "object",
+            "properties": {
+                "avg_latency": {
+                    "type": "number"
+                },
+                "last_24h_checks": {
+                    "type": "integer"
+                },
+                "monitor_id": {
+                    "type": "integer"
+                },
+                "uptime_percentage": {
+                    "type": "number"
+                }
+            }
         },
         "dto.RegisterRequest": {
             "type": "object",
@@ -440,35 +593,6 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
-                }
-            }
-        },
-        "models.CheckResult": {
-            "type": "object",
-            "properties": {
-                "checked_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "latency_ms": {
-                    "type": "integer"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "monitor_id": {
-                    "type": "integer"
-                },
-                "result_value": {
-                    "type": "string"
-                },
-                "status": {
-                    "$ref": "#/definitions/models.MonitorStatus"
-                },
-                "status_code": {
-                    "type": "integer"
                 }
             }
         },
@@ -498,6 +622,9 @@ const docTemplate = `{
                 },
                 "target": {
                     "type": "string"
+                },
+                "timeout": {
+                    "type": "integer"
                 },
                 "type": {
                     "$ref": "#/definitions/models.MonitorType"
@@ -531,6 +658,39 @@ const docTemplate = `{
                 "TypeHTTP",
                 "TypePing",
                 "TypeDNS"
+            ]
+        },
+        "models.NotificationChannel": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "target": {
+                    "type": "string"
+                },
+                "type": {
+                    "$ref": "#/definitions/models.NotificationType"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.NotificationType": {
+            "type": "string",
+            "enum": [
+                "email",
+                "sms",
+                "telegram"
+            ],
+            "x-enum-varnames": [
+                "TypeEmail",
+                "TypeSMS",
+                "TypeTelegram"
             ]
         }
     },

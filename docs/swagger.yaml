@@ -1,5 +1,18 @@
 basePath: /api/v1
 definitions:
+  dto.CreateChannelRequest:
+    properties:
+      target:
+        type: string
+      type:
+        enum:
+        - email
+        - telegram
+        type: string
+    required:
+    - target
+    - type
+    type: object
   dto.LoginRequest:
     properties:
       password:
@@ -11,6 +24,52 @@ definitions:
     - username
     type: object
   dto.MonitorRequest:
+    properties:
+      config:
+        type: string
+      interval:
+        enum:
+        - 30s
+        - 1m
+        - 5m
+        - 30m
+        - 1h
+        - 12h
+        - 24h
+        type: string
+      target:
+        type: string
+      timeout:
+        enum:
+        - 1s
+        - 15s
+        - 30s
+        - 45s
+        - 60s
+        type: string
+      type:
+        allOf:
+        - $ref: '#/definitions/models.MonitorType'
+        enum:
+        - http
+        - dns
+        - ping
+    required:
+    - interval
+    - target
+    - timeout
+    - type
+    type: object
+  dto.MonitorStatsResponse:
+    properties:
+      avg_latency:
+        type: number
+      last_24h_checks:
+        type: integer
+      monitor_id:
+        type: integer
+      uptime_percentage:
+        type: number
     type: object
   dto.RegisterRequest:
     properties:
@@ -25,25 +84,6 @@ definitions:
     - email
     - password
     - username
-    type: object
-  models.CheckResult:
-    properties:
-      checked_at:
-        type: string
-      id:
-        type: integer
-      latency_ms:
-        type: integer
-      message:
-        type: string
-      monitor_id:
-        type: integer
-      result_value:
-        type: string
-      status:
-        $ref: '#/definitions/models.MonitorStatus'
-      status_code:
-        type: integer
     type: object
   models.Monitor:
     properties:
@@ -63,6 +103,8 @@ definitions:
         type: string
       target:
         type: string
+      timeout:
+        type: integer
       type:
         $ref: '#/definitions/models.MonitorType'
       user_id:
@@ -88,6 +130,29 @@ definitions:
     - TypeHTTP
     - TypePing
     - TypeDNS
+  models.NotificationChannel:
+    properties:
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      target:
+        type: string
+      type:
+        $ref: '#/definitions/models.NotificationType'
+      user_id:
+        type: integer
+    type: object
+  models.NotificationType:
+    enum:
+    - email
+    - sms
+    - telegram
+    type: string
+    x-enum-varnames:
+    - TypeEmail
+    - TypeSMS
+    - TypeTelegram
 host: localhost:8080
 info:
   contact:
@@ -101,6 +166,57 @@ info:
   title: Pingly API
   version: "1.0"
 paths:
+  /channels:
+    get:
+      description: List all notification channels configured by the user
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.NotificationChannel'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get user channels
+      tags:
+      - channels
+    post:
+      description: Add a new notification channel (email, telegram)
+      parameters:
+      - description: Channel Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateChannelRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.NotificationChannel'
+      security:
+      - BearerAuth: []
+      summary: Create channel
+      tags:
+      - channels
+  /channels/{id}:
+    delete:
+      description: Remove a notification channel
+      parameters:
+      - description: Channel ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+      security:
+      - BearerAuth: []
+      summary: Delete channel
+      tags:
+      - channels
   /login:
     post:
       consumes:
@@ -141,6 +257,15 @@ paths:
               type: string
             type: object
       summary: Login user
+      tags:
+      - auth
+  /logout:
+    post:
+      description: Invalida o token JWT atual adicionando-o à lista negra no Redis.
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Logout user
       tags:
       - auth
   /monitors:
@@ -270,11 +395,11 @@ paths:
       summary: Get monitor by ID
       tags:
       - monitors
-  /monitors/{id}/checks:
+  /monitors/{id}/stats:
     get:
       consumes:
       - application/json
-      description: Retrieve the latest check results for a specific monitor.
+      description: Get uptime and latency stats for a monitor
       parameters:
       - description: Monitor ID
         in: path
@@ -287,30 +412,10 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/models.CheckResult'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/dto.MonitorStatsResponse'
       security:
       - BearerAuth: []
-      summary: Get monitor check results
+      summary: Get monitor stats
       tags:
       - monitors
   /register:
