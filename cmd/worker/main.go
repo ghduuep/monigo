@@ -29,7 +29,13 @@ func main() {
 		os.Getenv("TELEGRAM_BOT_TOKEN"),
 	)
 
-	dispatcher := notification.NewDispatcher(emailService, telegramService)
+	smsService := notification.NewSMSService(
+		os.Getenv("TWILIO_ACCOUNT_SID"),
+		os.Getenv("TWILIO_AUTH_TOKEN"),
+		os.Getenv("TWILIO_NUMBER"),
+	)
+
+	dispatcher := notification.NewDispatcher(emailService, telegramService, smsService)
 
 	db := database.InitDB()
 	defer db.Close()

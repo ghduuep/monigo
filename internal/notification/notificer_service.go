@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/notification/templates"
+	"github.com/twilio/twilio-go"
+	twilioApi "github.com/twilio/twilio-go/rest/api/v2010"
 	"net/http"
 	"net/smtp"
 	"time"
@@ -125,4 +127,55 @@ func (t *TelegramService) SendStatusAlert(chatID string, m models.Monitor, resul
 	}
 
 	return t.Send(chatID, subject, body)
+}
+
+type SMSService struct {
+	AccountSID string
+	AuthToken  string
+	FromNumber string
+}
+
+func NewSMSService(accountSid, authToken, number string) *SMSService {
+	return &SMSService{
+		AccountSID: accountSid,
+		AuthToken:  authToken,
+		FromNumber: number,
+	}
+}
+
+func (s *SMSService) Send(to, body string) error {
+	client := twilio.NewRestClientWithParams(twilio.ClientParams{
+		Username: s.AccountSID,
+		Password: s.AuthToken,
+	})
+
+	params := &twilioApi.CreateMessageParams{}
+	params.SetTo(to)
+	params.SetBody(body)
+
+	_, err := client.Api.CreateMessage(params)
+	return err
+}
+
+func (s *SMSService) SendStatusAlert(to string, m models.Monitor, result models.CheckResult, duration time.Duration) error {
+	var body string
+
+	if m.Type == models.TypeHTTP {
+		body = templates.BuildSMSHTTPMessage(m, result, duration)
+	} else if m.Type == models.TypeDNS {
+		var config models.DNSConfig
+		json.Unmarshal(m.Config, &config)
+
+		if result.Status == models.StatusUp {
+			body = templates.BuildSMSDNSDetectedMessage(m, result, config.RecordType)
+		} else if result.Status == models.StatusDown && result.ResultValue != "" {
+			body = templates.BuildSMSDNSChangedMessage(m, result, config.RecordType)
+		} else {
+			body = templates.BuildSMSDNSStatusMessage(m, result, config.RecordType)
+		}
+	} else if m.Type == models.TypePort {
+		body = templates.BuildSMSPortMessage(m, result, duration)
+	}
+
+	return s.Send(to, body)
 }

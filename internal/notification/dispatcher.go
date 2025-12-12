@@ -10,12 +10,14 @@ import (
 type NotificationDispatcher struct {
 	Email    *EmailService
 	Telegram *TelegramService
+	SMS      *SMSService
 }
 
-func NewDispatcher(email *EmailService, telegram *TelegramService) *NotificationDispatcher {
+func NewDispatcher(email *EmailService, telegram *TelegramService, sms *SMSService) *NotificationDispatcher {
 	return &NotificationDispatcher{
 		Email:    email,
 		Telegram: telegram,
+		SMS:      sms,
 	}
 }
 
@@ -32,6 +34,11 @@ func (d *NotificationDispatcher) SendAlert(channels []models.NotificationChannel
 		case models.TypeTelegram:
 			go func(target string) {
 				d.Telegram.SendStatusAlert(target, m, res, duration)
+			}(ch.Target)
+
+		case models.TypeSMS:
+			go func(target string) {
+				d.SMS.SendStatusAlert(target, m, res, duration)
 			}(ch.Target)
 
 		default:
