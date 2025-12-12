@@ -70,8 +70,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		status_changed_at TIMESTAMPTZ,
 		created_at TIMESTAMPTZ DEFAULT NOW(),
 
-		CONSTRAINT unique_monitor_per_user UNIQUE (user_id, target, type)
-	);
+		);
 
 	CREATE INDEX IF NOT EXISTS idx_monitors_user_id ON monitors(user_id);
 
