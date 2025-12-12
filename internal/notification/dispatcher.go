@@ -1,10 +1,8 @@
 package notification
 
 import (
-	"log"
-	"time"
-
 	"github.com/ghduuep/pingly/internal/models"
+	"log"
 )
 
 type NotificationDispatcher struct {

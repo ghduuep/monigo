@@ -10,7 +10,6 @@ import (
 	twilioApi "github.com/twilio/twilio-go/rest/api/v2010"
 	"net/http"
 	"net/smtp"
-	"time"
 )
 
 type Notifier interface {
