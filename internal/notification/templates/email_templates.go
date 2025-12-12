@@ -96,7 +96,7 @@ func BuildEmailDNSDetectedMessage(m models.Monitor, res models.CheckResult, dnsT
 	return subject, body
 }
 
-func BuildEmailPingMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
+func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
 	emoji := "🟢"
 	color := "#38a169" // Verde
 	statusText := "CONECTADO"

@@ -34,7 +34,7 @@ type MonitorType string
 
 const (
 	TypeHTTP MonitorType = "http"
-	TypePing MonitorType = "ping"
+	TypePort MonitorType = "port"
 	TypeDNS  MonitorType = "dns"
 )
 

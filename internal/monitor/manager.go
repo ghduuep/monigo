@@ -123,8 +123,8 @@ func performCheck(m models.Monitor) models.CheckResult {
 		return checkHTTP(m)
 	case models.TypeDNS:
 		return checkDNS(m)
-	case models.TypePing:
-		return checkPing(m)
+	case models.TypePort:
+		return checkPort(m)
 	default:
 		return models.CheckResult{
 			Status: models.StatusDown, Message: "Unknown type",

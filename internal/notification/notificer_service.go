@@ -75,8 +75,8 @@ func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result model
 		} else {
 			subject, body = templates.BuildEmailDNSStatusMessage(m, result, dnsType)
 		}
-	} else if m.Type == models.TypePing {
-		subject, body = templates.BuildEmailPingMessage(m, result, duration)
+	} else if m.Type == models.TypePort {
+		subject, body = templates.BuildEmailPortMessage(m, result, duration)
 	}
 
 	return s.Send(to, subject, body)
@@ -120,8 +120,8 @@ func (t *TelegramService) SendStatusAlert(chatID string, m models.Monitor, resul
 		} else {
 			subject, body = templates.BuildTelegramDNSStatusMessage(m, result, config.RecordType)
 		}
-	} else if m.Type == models.TypePing {
-		subject, body = templates.BuildTelegramPingMessage(m, result, duration)
+	} else if m.Type == models.TypePort {
+		subject, body = templates.BuildTelegramPortMessage(m, result, duration)
 	}
 
 	return t.Send(chatID, subject, body)

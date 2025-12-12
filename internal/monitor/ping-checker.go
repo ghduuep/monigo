@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func checkPing(m models.Monitor) models.CheckResult {
+func checkPort(m models.Monitor) models.CheckResult {
 	target := m.Target
 	if !strings.Contains(target, ":") {
 		target = fmt.Sprintf("%s:443", target)

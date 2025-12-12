@@ -69,7 +69,7 @@ func BuildTelegramDNSStatusMessage(m models.Monitor, res models.CheckResult, dns
 	return subject, body
 }
 
-func BuildTelegramPingMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
+func BuildTelegramPortMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
 	var emoji, statusText string
 
 	if res.Status == models.StatusDown {
