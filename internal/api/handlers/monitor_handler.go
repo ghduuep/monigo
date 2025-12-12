@@ -151,7 +151,44 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 
-	stats, err := database.GetMonitorStats(c.Request().Context(), h.DB, id)
+	var from, to time.Time
+	to = time.Now()
+
+	startDateStr := c.QueryParam("start_date")
+	endDateStr := c.QueryParam("end_date")
+	period := c.QueryParam("period")
+
+	if startDateStr != "" && endDateStr != "" {
+		layout := "2006-01-02"
+
+		parsedStart, err := time.Parse(layout, startDateStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid start_date. Use YYYY-MM-DD format"})
+		}
+
+		from = parsedStart
+
+		parsedEnd, err := time.Parse(layout, endDateStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid start_date. Use YYYY-MM-DD format"})
+		}
+
+		to = parsedEnd.Add(24 * time.Hour).Add(-1 * time.Second)
+
+	} else {
+		switch period {
+		case "7d":
+			from = time.Now().AddDate(0, 0, -7)
+		case "30d":
+			from = time.Now().AddDate(0, 0, -30)
+		case "24h":
+			from = time.Now().Add(-24 * time.Hour)
+		default:
+			from = time.Now().Add(-24 * time.Hour)
+		}
+	}
+
+	stats, err := database.GetMonitorStats(c.Request().Context(), h.DB, id, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get stats."})
 	}

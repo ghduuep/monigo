@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/ghduuep/pingly/internal/models"
@@ -18,25 +19,28 @@ func CreateCheckResult(ctx context.Context, db *pgxpool.Pool, result *models.Che
 	return nil
 }
 
-func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int) (dto.MonitorStatsResponse, error) {
+func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) (dto.MonitorStatsResponse, error) {
 	query := `SELECT
-				COUNT(cr.id) FILTER (WHERE cr.checked_at > NOW() - INTERVAL '24 hours') as last_24_checks,
-				COALESCE(AVG(cr.latency_ms), 0) as avg_latency,
+				COUNT(id) as total_checks,
+				COALESCE(AVG(latency_ms), 0) as avg_latency,
+				COALESCE(MIN(latency_ms), 0) as min_latency, -- Pega a mínima
+				COALESCE(MAX(latency_ms), 0) as max_latency, -- Pega a máxima
 				COALESCE(
-					(COUNT(cr.id) FILTER (WHERE cr.status = 'up') * 100.0 / NULLIF(COUNT(cr.id), 0)),
+					(COUNT(id) FILTER (WHERE status = 'up') * 100.0 / NULLIF(COUNT(id), 0)),
 					0
 				) as uptime_percentage
-			FROM monitors m
-			LEFT JOIN check_results cr ON cr.monitor_id = m.id AND cr.checked_at > NOW() - INTERVAL '30 days'
-			WHERE m.id = $1
-			GROUP BY m.id`
+			FROM check_results
+			WHERE monitor_id = $1 
+			AND checked_at >= $2 AND checked_at <= $3`
 
 	var stats dto.MonitorStatsResponse
 	stats.MonitorID = monitorID
 
-	err := db.QueryRow(ctx, query, monitorID).Scan(
-		&stats.Last24HChecks,
+	err := db.QueryRow(ctx, query, monitorID, from, to).Scan(
+		&stats.TotalChecks,
 		&stats.AvgLatency,
+		&stats.MinLatency,
+		&stats.MaxLatency,
 		&stats.UptimePercentage,
 	)
 

@@ -36,7 +36,9 @@ type MonitorStatsResponse struct {
 	MonitorID        int     `json:"monitor_id"`
 	UptimePercentage float64 `json:"uptime_percentage"`
 	AvgLatency       float64 `json:"avg_latency"`
-	Last24HChecks    int     `json:"last_24h_checks"`
+	MinLatency       float64 `json:"min_latency"`
+	MaxLatency       float64 `json:"max_latency"`
+	TotalChecks      int     `json:"total_checks"`
 }
 
 type CreateChannelRequest struct {
