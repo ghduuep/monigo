@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/notification/templates"
-	"github.com/resend/resend-go/v3"
 	"net/http"
+	"net/smtp"
 	"time"
 )
 
@@ -16,33 +16,42 @@ type Notifier interface {
 }
 
 type EmailService struct {
-	Client *resend.Client
-	Sender string
+	Host     string
+	Password string
+	Port     string
+	Username string
+	Sender   string
 }
 
-func NewEmailService(apiKey, sender string) *EmailService {
-	client := resend.NewClient(apiKey)
-
+func NewEmailService(host, password, port, username, sender string) *EmailService {
 	return &EmailService{
-		Client: client,
-		Sender: sender,
+		Host:     host,
+		Password: password,
+		Port:     port,
+		Username: username,
+		Sender:   sender,
 	}
 }
 
 func (s *EmailService) Send(to, subject, body string) error {
-	params := &resend.SendEmailRequest{
-		From:    s.Sender,
-		To:      []string{to},
-		Subject: subject,
-		Html:    body,
+	auth := smtp.PlainAuth("", s.Username, s.Password, s.Host)
+	addr := fmt.Sprintf("%s:%s", s.Host, s.Port)
+
+	headers := make(map[string]string)
+	headers["From"] = s.Sender
+	headers["To"] = to
+	headers["Subject"] = subject
+	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "text/html; charset=\"UTF-8\""
+
+	message := ""
+	for k, v := range headers {
+		message += fmt.Sprintf("%s: %s\r\n", k, v)
 	}
 
-	_, err := s.Client.Emails.Send(params)
-	if err != nil {
-		return err
-	}
+	message += "\r\n" + body
 
-	return nil
+	return smtp.SendMail(addr, auth, s.Sender, []string{to}, []byte(message))
 }
 
 func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result models.CheckResult, duration time.Duration) error {
