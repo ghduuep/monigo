@@ -89,6 +89,17 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 
 	CREATE INDEX IF NOT EXISTS idx_check_results_monitor_date
 	ON check_results(monitor_id, checked_at DESC);
+
+	CREATE TABLE IF NOT EXISTS incidents (
+    id SERIAL PRIMARY KEY,
+    monitor_id INTEGER REFERENCES monitors(id) ON DELETE CASCADE,
+    started_at TIMESTAMPTZ DEFAULT NOW(),
+    resolved_at TIMESTAMPTZ,
+    duration INTERVAL,
+    error_cause TEXT
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_incidents_monitor_id ON incidents(monitor_id);
 	`
 	_, err := pool.Exec(ctx, query)
 	return err
