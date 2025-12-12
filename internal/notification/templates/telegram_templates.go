@@ -44,6 +44,15 @@ func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, inc *mod
 	return subject, body
 }
 
+func BuildTelegramDNSRecoveredMessage(m models.Monitor, res models.CheckResult, dnsType string, inc *models.Incident) (string, string) {
+	subject := fmt.Sprintf("🟢 DNS %s OK: %s", dnsType, m.Target)
+	body := fmt.Sprintf("\n\n✅ **Valor confirmado:** `%s`", res.ResultValue)
+	if inc != nil && inc.Duration != nil {
+		body += fmt.Sprintf("\n⏱ **Duração:** %s", inc.Duration.Round(time.Second).String())
+	}
+	return subject, body
+}
+
 func BuildTelegramDNSChangedMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
 	subject := fmt.Sprintf("🚨 DNS %s Alterado: %s", dnsType, m.Target)
 

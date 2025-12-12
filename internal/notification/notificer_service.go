@@ -68,7 +68,10 @@ func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result model
 		} else {
 			dnsType = "N/A"
 		}
-		if result.Status == models.StatusDown && result.ResultValue != "" {
+
+		if result.Status == models.StatusUp {
+			subject, body = templates.BuildEmailDNSRecoveredMessage(m, result, dnsType, inc)
+		} else if result.Status == models.StatusDown && result.ResultValue != "" {
 			subject, body = templates.BuildEmailDNSChangedMessage(m, result, dnsType)
 		} else {
 			subject, body = templates.BuildEmailDNSStatusMessage(m, result, dnsType)
@@ -118,12 +121,13 @@ func (t *TelegramService) SendStatusAlert(chatID string, m models.Monitor, resul
 		json.Unmarshal(m.Config, &config)
 
 		if result.Status == models.StatusUp {
-			subject, body = templates.BuildTelegramDNSDetectedMessage(m, result, config.RecordType)
+			subject, body = templates.BuildTelegramDNSRecoveredMessage(m, result, config.RecordType, inc)
 		} else if result.Status == models.StatusDown && result.ResultValue != "" {
 			subject, body = templates.BuildTelegramDNSChangedMessage(m, result, config.RecordType)
 		} else {
 			subject, body = templates.BuildTelegramDNSStatusMessage(m, result, config.RecordType)
 		}
+
 	} else if m.Type == models.TypePort {
 		subject, body = templates.BuildTelegramPortMessage(m, result, inc)
 	}
@@ -170,7 +174,7 @@ func (s *SMSService) SendStatusAlert(to string, m models.Monitor, result models.
 		json.Unmarshal(m.Config, &config)
 
 		if result.Status == models.StatusUp {
-			body = templates.BuildSMSDNSDetectedMessage(m, result, config.RecordType)
+			body = templates.BuildSMSDNSRecoveredMessage(m, result, config.RecordType)
 		} else if result.Status == models.StatusDown && result.ResultValue != "" {
 			body = templates.BuildSMSDNSChangedMessage(m, result, config.RecordType)
 		} else {

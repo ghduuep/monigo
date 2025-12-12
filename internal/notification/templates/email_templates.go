@@ -49,6 +49,24 @@ func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, inc *models
 	return subject, body
 }
 
+func BuildEmailDNSRecoveredMessage(m models.Monitor, res models.CheckResult, dnsType string, inc *models.Incident) (string, string) {
+	subject := fmt.Sprintf("🟢 DNS %s Resolvido: %s", dnsType, m.Target)
+
+	body := fmt.Sprintf(`
+		<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #38a169; border-radius: 5px;">
+			<h2 style="color: #38a169;">Resolução DNS Normalizada</h2>
+			<p>O registo <strong>%s</strong> para <strong>%s</strong> voltou ao valor esperado.</p>
+			<p style="background: #f0fff4; padding: 10px;"><strong>Valor Atual:</strong> <code>%s</code></p>
+	`, dnsType, m.Target, res.ResultValue)
+
+	if inc != nil && inc.Duration != nil {
+		body += fmt.Sprintf("<p><strong>Duração da instabilidade:</strong> %s</p>", inc.Duration.Round(time.Second).String())
+	}
+
+	body += "</div>"
+	return subject, body
+}
+
 func BuildEmailDNSStatusMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
 	subject := fmt.Sprintf("⚠️ Falha de DNS Tipo %s: %s", dnsType, m.Target)
 
