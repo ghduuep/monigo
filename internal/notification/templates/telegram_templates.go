@@ -7,7 +7,7 @@ import (
 	"github.com/ghduuep/pingly/internal/models"
 )
 
-func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
+func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
 	var emoji, statusText string
 
 	if res.Status == models.StatusDown {
@@ -25,12 +25,19 @@ func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, d time.D
 	body += fmt.Sprintf("\n⚡ *Latência:* %dms", res.Latency)
 
 	timeLayout := "02/01 15:04:05"
-	if res.Status == models.StatusDown {
-		body += fmt.Sprintf("\n🕒 *Começou em:* %s", res.CheckedAt.Format(timeLayout))
-	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
-		body += fmt.Sprintf("\n🕒 *Resolvido em:* %s", res.CheckedAt.Format(timeLayout))
-		if d > 0 {
-			body += fmt.Sprintf("\n⏱ *Duração da Queda:* %s", d.Round(time.Second).String())
+
+	if inc != nil {
+		body += fmt.Sprintf("\n🆔 *Incidente:* #%d", inc.ID)
+
+		if res.Status == models.StatusDown {
+			body += fmt.Sprintf("\n🕒 *Começou em:* %s", inc.StartedAt.Format(timeLayout))
+		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
+			if inc.ResolvedAt != nil {
+				body += fmt.Sprintf("\n🕒 *Resolvido em:* %s", inc.ResolvedAt.Format(timeLayout))
+			}
+			if inc.Duration != nil {
+				body += fmt.Sprintf("\n⏱ *Duração da Queda:* %s", inc.Duration.Round(time.Second).String())
+			}
 		}
 	}
 
@@ -69,7 +76,7 @@ func BuildTelegramDNSStatusMessage(m models.Monitor, res models.CheckResult, dns
 	return subject, body
 }
 
-func BuildTelegramPortMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
+func BuildTelegramPortMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
 	var emoji, statusText string
 
 	if res.Status == models.StatusDown {
@@ -88,12 +95,19 @@ func BuildTelegramPortMessage(m models.Monitor, res models.CheckResult, d time.D
 	body += fmt.Sprintf("\n⚡ *Latência:* %dms", res.Latency)
 
 	timeLayout := "02/01 15:04:05"
-	if res.Status == models.StatusDown {
-		body += fmt.Sprintf("\n🕒 *Começou em:* %s", res.CheckedAt.Format(timeLayout))
-	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
-		body += fmt.Sprintf("\n🕒 *Resolvido em:* %s", res.CheckedAt.Format(timeLayout))
-		if d > 0 {
-			body += fmt.Sprintf("\n⏱ *Duração:* %s", d.Round(time.Second).String())
+
+	if inc != nil {
+		body += fmt.Sprintf("\n🆔 *Incidente:* #%d", inc.ID)
+
+		if res.Status == models.StatusDown {
+			body += fmt.Sprintf("\n🕒 *Começou em:* %s", inc.StartedAt.Format(timeLayout))
+		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
+			if inc.ResolvedAt != nil {
+				body += fmt.Sprintf("\n🕒 *Resolvido em:* %s", inc.ResolvedAt.Format(timeLayout))
+			}
+			if inc.Duration != nil {
+				body += fmt.Sprintf("\n⏱ *Duração:* %s", inc.Duration.Round(time.Second).String())
+			}
 		}
 	}
 

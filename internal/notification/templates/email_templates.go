@@ -7,23 +7,32 @@ import (
 	"github.com/ghduuep/pingly/internal/models"
 )
 
-func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
+func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
 	emoji := "🟢"
 	color := "#38a169" // Verde
 
 	timeLayout := "02/01/2006 15:04:05"
 	var timeDetails string
 
-	if res.Status == models.StatusDown {
-		emoji = "🔴"
-		color = "#e53e5e" // Vermelho
-		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
-	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
-		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", m.StatusChangedAt.Format(timeLayout))
-		timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
+	if inc != nil {
+		if res.Status == models.StatusDown {
+			emoji = "🔴"
+			color = "#e53e5e" // Vermelho
+			timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
+			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
+		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
+			timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
 
-		if d > 0 {
-			timeDetails += fmt.Sprintf("<p><strong>Duração:</strong> %s</p>", d.Round(time.Second).String())
+			if inc.ResolvedAt != nil {
+				timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", inc.ResolvedAt.Format(timeLayout))
+			} else {
+				timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
+			}
+
+			if inc.Duration != nil {
+				timeDetails += fmt.Sprintf("<p><strong>Duração:</strong> %s</p>", inc.Duration.Round(time.Second).String())
+			}
+			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
 		}
 	}
 
@@ -96,7 +105,7 @@ func BuildEmailDNSDetectedMessage(m models.Monitor, res models.CheckResult, dnsT
 	return subject, body
 }
 
-func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, d time.Duration) (string, string) {
+func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
 	emoji := "🟢"
 	color := "#38a169" // Verde
 	statusText := "CONECTADO"
@@ -104,17 +113,22 @@ func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, d time.Dura
 	timeLayout := "02/01/2006 15:04:05"
 	var timeDetails string
 
-	if res.Status == models.StatusDown {
-		emoji = "🔴"
-		color = "#e53e5e" // Vermelho
-		statusText = "FALHA"
-		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
-	} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
-		timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", m.StatusChangedAt.Format(timeLayout))
-		timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", res.CheckedAt.Format(timeLayout))
-
-		if d > 0 {
-			timeDetails += fmt.Sprintf("<p><strong>Tempo de inatividade:</strong> %s</p>", d.Round(time.Second).String())
+	if inc != nil {
+		if res.Status == models.StatusDown {
+			emoji = "🔴"
+			color = "#e53e5e" // Vermelho
+			statusText = "FALHA"
+			timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
+			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
+		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
+			timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
+			if inc.ResolvedAt != nil {
+				timeDetails += fmt.Sprintf("<p><strong>Resolvido em:</strong> %s</p>", inc.ResolvedAt.Format(timeLayout))
+			}
+			if inc.Duration != nil {
+				timeDetails += fmt.Sprintf("<p><strong>Tempo de inatividade:</strong> %s</p>", inc.Duration.Round(time.Second).String())
+			}
+			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
 		}
 	}
 

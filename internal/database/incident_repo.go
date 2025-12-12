@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ghduuep/pingly/internal/models"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -42,4 +43,21 @@ func ResolveIncident(ctx context.Context, db *pgxpool.Pool, monitorID int) (*mod
 		return nil, err
 	}
 	return &inc, nil
+}
+
+func GetIncidentsByID(ctx context.Context, db *pgxpool.Pool, monitorID int) ([]*models.Incident, error) {
+	query := `SELECT * from incidents WHERE id = $1 ORDER BY started_at DESC LIMIT 10`
+
+	rows, err := db.Query(ctx, query, monitorID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.Incident])
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
 }

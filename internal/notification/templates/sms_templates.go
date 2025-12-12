@@ -7,7 +7,7 @@ import (
 	"github.com/ghduuep/pingly/internal/models"
 )
 
-func BuildSMSHTTPMessage(m models.Monitor, res models.CheckResult, d time.Duration) string {
+func BuildSMSHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) string {
 	var emoji, statusText string
 
 	if res.Status == models.StatusDown {
@@ -25,8 +25,8 @@ func BuildSMSHTTPMessage(m models.Monitor, res models.CheckResult, d time.Durati
 	} else {
 		msg += fmt.Sprintf(" %dms.", res.Latency)
 
-		if m.LastCheckStatus == models.StatusDown && d > 0 {
-			msg += fmt.Sprintf(" Down for: %s", d.Round(time.Second).String())
+		if inc != nil && m.LastCheckStatus == models.StatusDown && inc.Duration != nil {
+			msg += fmt.Sprintf(" Down for: %s", inc.Duration.Round(time.Second).String())
 		}
 	}
 
@@ -45,7 +45,7 @@ func BuildSMSDNSStatusMessage(m models.Monitor, res models.CheckResult, dnsType 
 	return fmt.Sprintf("⚠️ [DNS %s] %s Failed. Err: %s", dnsType, m.Target, res.Message)
 }
 
-func BuildSMSPortMessage(m models.Monitor, res models.CheckResult, d time.Duration) string {
+func BuildSMSPortMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) string {
 	var emoji, statusText string
 
 	if res.Status == models.StatusDown {
@@ -62,8 +62,8 @@ func BuildSMSPortMessage(m models.Monitor, res models.CheckResult, d time.Durati
 		msg += fmt.Sprintf(" %s", res.Message)
 	} else {
 		msg += fmt.Sprintf(" %dms.", res.Latency)
-		if m.LastCheckStatus == models.StatusDown && d > 0 {
-			msg += fmt.Sprintf(" Down for: %s", d.Round(time.Second).String())
+		if inc != nil && m.LastCheckStatus == models.StatusDown && inc.Duration != nil {
+			msg += fmt.Sprintf(" Down for: %s", inc.Duration.Round(time.Second).String())
 		}
 	}
 
