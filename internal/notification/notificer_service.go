@@ -68,10 +68,7 @@ func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result model
 		} else {
 			dnsType = "N/A"
 		}
-
-		if result.Status == models.StatusUp {
-			subject, body = templates.BuildEmailDNSDetectedMessage(m, result, dnsType)
-		} else if result.Status == models.StatusDown && result.ResultValue != "" {
+		if result.Status == models.StatusDown && result.ResultValue != "" {
 			subject, body = templates.BuildEmailDNSChangedMessage(m, result, dnsType)
 		} else {
 			subject, body = templates.BuildEmailDNSStatusMessage(m, result, dnsType)

@@ -33,10 +33,6 @@ func BuildSMSHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.I
 	return msg
 }
 
-func BuildSMSDNSDetectedMessage(m models.Monitor, res models.CheckResult, dnsType string) string {
-	return fmt.Sprintf("🟢 [DNS %s] %s Configured. Val: %s", dnsType, m.Target, res.ResultValue)
-}
-
 func BuildSMSDNSChangedMessage(m models.Monitor, res models.CheckResult, dnsType string) string {
 	return fmt.Sprintf("🚨 [DNS %s] %s CHANGED! New: %s. Msg: %s", dnsType, m.Target, res.ResultValue, res.Message)
 }

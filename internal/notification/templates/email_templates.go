@@ -85,26 +85,6 @@ func BuildEmailDNSChangedMessage(m models.Monitor, res models.CheckResult, dnsTy
 	return subject, body
 }
 
-func BuildEmailDNSDetectedMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
-	subject := fmt.Sprintf("🟢 DNS Tipo %s Detectado: %s", dnsType, m.Target)
-
-	body := fmt.Sprintf(`
-		<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #38a169; border-radius: 5px; background-color: #f0fff4;">
-			<h2 style="color: #38a169;">Monitorização DNS Tipo %s Ativa</h2>
-			<p>A monitorização para <strong>%s</strong> foi atualizada com sucesso.</p>
-			
-			<ul>
-				<li><strong>Status:</strong> <span style="color: #38a169; font-weight: bold;">UP (Ativo)</span></li>
-				<li><strong>Valor Detectado:</strong> <code>%s</code></li>
-			</ul>
-
-			<p style="font-size: 12px; color: #666;">A partir de agora, avisaremos se esse valor mudar.</p>
-		</div>
-	`, dnsType, m.Target, res.ResultValue)
-
-	return subject, body
-}
-
 func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
 	emoji := "🟢"
 	color := "#38a169" // Verde

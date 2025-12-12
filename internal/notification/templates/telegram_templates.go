@@ -44,16 +44,6 @@ func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, inc *mod
 	return subject, body
 }
 
-func BuildTelegramDNSDetectedMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
-	subject := fmt.Sprintf("🟢 DNS %s Detectado: %s", dnsType, m.Target)
-
-	body := fmt.Sprintf("\n\nA monitorização foi configurada com sucesso.")
-	body += fmt.Sprintf("\n\n📄 *Valor Atual:* `%s`", res.ResultValue)
-	body += "\n\n_Avisaremos se houver alterações._"
-
-	return subject, body
-}
-
 func BuildTelegramDNSChangedMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
 	subject := fmt.Sprintf("🚨 DNS %s Alterado: %s", dnsType, m.Target)
 
