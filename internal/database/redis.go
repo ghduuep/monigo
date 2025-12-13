@@ -11,12 +11,12 @@ import (
 )
 
 func InitRedis() *redis.Client {
-	redisUrl := os.Getenv("REDIS_URL")
+	redisURL := os.Getenv("REDIS_URL")
 
 	var opts *redis.Options
 	var err error
 
-	opts, _ = redis.ParseURL(redisUrl)
+	opts, _ = redis.ParseURL(redisURL)
 	rdb := redis.NewClient(opts)
 
 	_, err = rdb.Ping(context.Background()).Result()
