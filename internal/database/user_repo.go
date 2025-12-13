@@ -85,7 +85,7 @@ func UpdateUser(ctx context.Context, db *pgxpool.Pool, userID int, data dto.Upda
 		return err
 	}
 
-	_, err = db.Exec(ctx, query, args)
+	_, err = db.Exec(ctx, query, args...)
 	if err != nil {
 		return err
 	}
