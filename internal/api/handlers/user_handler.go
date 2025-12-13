@@ -32,15 +32,10 @@ func (h *Handler) GetUsers(c echo.Context) error {
 	return c.JSON(http.StatusOK, response)
 }
 
-func (h *Handler) GetUserByID(c echo.Context) error {
-	idParam := c.Param("id")
+func (h *Handler) GetUser(c echo.Context) error {
+	userID := getUserIdFromToken(c)
 
-	id, err := strconv.Atoi(idParam)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
-	}
-
-	user, err := database.GetUserByID(c.Request().Context(), h.DB, id)
+	user, err := database.GetUserByID(c.Request().Context(), h.DB, userID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "User not found."})
 	}
