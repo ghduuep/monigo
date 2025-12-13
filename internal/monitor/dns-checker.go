@@ -76,7 +76,7 @@ func checkDNS(m models.Monitor) models.CheckResult {
 			MonitorID:   m.ID,
 			Status:      models.StatusUp,
 			ResultValue: currentValue,
-			Message:     "Valores DNS detectados automaticamente.",
+			Message:     "DNS values detected",
 			CheckedAt:   time.Now(),
 		}
 	}
