@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"net/http"
+	"os/user"
+	"strconv"
+
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
-	"strconv"
 )
 
 func (h *Handler) GetUsers(c echo.Context) error {
@@ -56,6 +58,12 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
+	}
+
+	userID := getUserIdFromToken(c)
+
+	if userID != id {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "You can only delete your user."})
 	}
 
 	if err = database.DeleteUser(c.Request().Context(), h.DB, id); err != nil {
