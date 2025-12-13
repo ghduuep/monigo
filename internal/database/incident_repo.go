@@ -47,7 +47,7 @@ func ResolveIncident(ctx context.Context, db *pgxpool.Pool, monitorID int) (*mod
 }
 
 func GetIncidentsByID(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) ([]*models.Incident, error) {
-	query := `SELECT * from incidents WHERE monitor_id = $1 WHERE started_at >= $2 AND started_at <= $3 ORDER BY started_at DESC`
+	query := `SELECT * from incidents WHERE monitor_id = $1 AND started_at >= $2 AND started_at <= $3 ORDER BY started_at DESC`
 
 	rows, err := db.Query(ctx, query, monitorID, from, to)
 	if err != nil {
