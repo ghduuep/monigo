@@ -89,13 +89,20 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 	if result.Status != m.LastCheckStatus && result.Status != models.StatusUnknown {
 		log.Printf("[LOG] Monitor %d has changed from %s to %s", m.ID, m.LastCheckStatus, result.Status)
 		var incident *models.Incident
+		var dbErr error
 
 		if result.Status == models.StatusDown {
-			incident, _ = database.CreateIncident(ctx, db, m.ID, result.Message)
+			incident, dbErr = database.CreateIncident(ctx, db, m.ID, result.Message)
+			if dbErr != nil {
+				log.Printf("[ERROR] Failed to create incident: %v", dbErr)
+			}
 		}
 
 		if m.StatusChangedAt != nil && m.LastCheckStatus == models.StatusDown && result.Status == models.StatusUp {
-			incident, _ = database.ResolveIncident(ctx, db, m.ID)
+			incident, dbErr = database.ResolveIncident(ctx, db, m.ID)
+			if dbErr != nil {
+				log.Printf("[ERROR] Failed to resolve incident: %v", dbErr)
+			}
 		}
 
 		if err := database.UpdateMonitorStatus(ctx, db, m.ID, string(result.Status)); err != nil {
