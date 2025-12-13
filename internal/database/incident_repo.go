@@ -86,3 +86,15 @@ func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID int, fro
 
 	return results, nil
 }
+
+func ExportIncidents(ctx context.Context, db *pgxpool.Pool, userID int, from, to time.Time) (pgx.Rows, error) {
+	query := `SELECT i.id, m.target, m.type, i.started_at, i.resolved_at, i.duration, i.error_cause
+		FROM incidents i
+		JOIN monitors m ON i.monitor_id = m.id
+		WHERE m.user_id = $1 
+		AND i.started_at >= $2 AND i.started_at <= $3
+		ORDER BY i.started_at DESC
+		`
+
+	return db.Query(ctx, query, userID, from, to)
+}

@@ -60,6 +60,7 @@ func SetupRotes(e *echo.Echo, db *pgxpool.Pool, rdb *redis.Client) {
 	protected.GET("/monitors/:id/incidents", handler.GetMonitorLastIncidents)
 	protected.GET("/incidents", handler.GetIncidents)
 	protected.GET("/monitors/:id/export", handler.ExportMonitorCSV)
+	protected.GET("/incidents/export", handler.ExportIncidentsCSV)
 
 	protected.POST("/logout", handler.Logout)
 	protected.POST("/channels", handler.CreateChannel)
