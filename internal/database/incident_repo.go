@@ -62,3 +62,27 @@ func GetIncidentsByID(ctx context.Context, db *pgxpool.Pool, monitorID int, from
 
 	return results, nil
 }
+
+func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID int, from, to time.Time) ([]*models.Incident, error) {
+	query := `SELECT i.id, i.monitor_id, i.started_at, i.resolved_at, i.duration, i.error_cause
+		FROM incidents i
+		JOIN monitors m ON i.monitor_id = m.id
+		WHERE m.user_id = $1 
+		AND i.started_at >= $2 AND i.started_at <= $3
+		ORDER BY i.started_at DESC
+		`
+
+	rows, err := db.Query(ctx, query, userID, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	results, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.Incident])
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
