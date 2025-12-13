@@ -45,3 +45,8 @@ type CreateChannelRequest struct {
 	Type   string `json:"type" validate:"required,oneof=email telegram sms"`
 	Target string `json:"target" validate:"required"`
 }
+
+type UpdateUserRequest struct {
+	Email    *string `json:"email"`
+	Password *string `json:"password"`
+}

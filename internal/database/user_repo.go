@@ -2,7 +2,10 @@ package database
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -75,6 +78,21 @@ func GetUserByUsername(ctx context.Context, db *pgxpool.Pool, username string) (
 	return user, err
 }
 
+func UpdateUser(ctx context.Context, db *pgxpool.Pool, userID int, data dto.UpdateUserRequest) error {
+
+	query, args, err := buildUpdateQuery(userID, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(ctx, query, args)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetUserChannels(ctx context.Context, db *pgxpool.Pool, userID int) ([]models.NotificationChannel, error) {
 	query := `SELECT id, user_id, type, target, enabled FROM user_channels WHERE user_id = $1 AND enabled = true`
 
@@ -108,4 +126,48 @@ func DeleteChannel(ctx context.Context, db *pgxpool.Pool, channelID int, userID 
 	}
 
 	return nil
+}
+
+func buildUpdateQuery(userID int, dto dto.UpdateUserRequest) (string, []interface{}, error) {
+	var setParts []string
+	var args []interface{}
+	argID := 1
+
+	if dto.Email != nil {
+		setParts = append(setParts, fmt.Sprintf("email = $%d", argID))
+		args = append(args, *dto.Email)
+		argID++
+	}
+
+	if dto.Password != nil {
+		setParts = append(setParts, fmt.Sprintf("password_hash = $%d", argID))
+		args = append(args, *dto.Password)
+		argID++
+	}
+
+	if len(setParts) == 0 {
+		return "", nil, fmt.Errorf("no data")
+	}
+
+	query := fmt.Sprintf("UPDATE users SET %s WHERE id = %d", strings.Join(setParts, ", "), argID)
+
+	args = append(args, userID)
+
+	return query, args, nil
+}
+
+func GetUserIDByEmail(ctx context.Context, db *pgxpool.Pool, email string) (int, error) {
+	var id int
+
+	query := `SELECT id FROM users WHERE email = $1`
+
+	err := db.QueryRow(ctx, query, email).Scan(&id)
+	if err != nil {
+
+		if err.Error() == "no rows in result set" {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return id, nil
 }
