@@ -54,20 +54,9 @@ func (h *Handler) GetUserByID(c echo.Context) error {
 }
 
 func (h *Handler) DeleteUser(c echo.Context) error {
-	idParam := c.Param("id")
-
-	id, err := strconv.Atoi(idParam)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
-	}
-
 	userID := getUserIdFromToken(c)
 
-	if userID != id {
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "You can only delete your user."})
-	}
-
-	if err = database.DeleteUser(c.Request().Context(), h.DB, id); err != nil {
+	if err := database.DeleteUser(c.Request().Context(), h.DB, userID); err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "User not found."})
 	}
 
