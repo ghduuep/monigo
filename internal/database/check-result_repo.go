@@ -72,3 +72,12 @@ func GetLastChecks(ctx context.Context, db *pgxpool.Pool, monitorID int, from, t
 
 	return results, nil
 }
+
+func ExportCheckResults(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) (pgx.Rows, error) {
+	query := `SELECT checked_at, status, latency_ms, status_code, result_value, message
+	FROM check_results
+	WHERE monitor_id = $1 AND checked_at >= $2 AND checked_at <= $3
+	ORDER BY checked_at DESC`
+
+	return db.Query(ctx, query, monitorID, from, to)
+}

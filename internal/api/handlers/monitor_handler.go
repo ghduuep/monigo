@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/csv"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -255,4 +257,89 @@ func (h *Handler) GetMonitorLastIncidents(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, incidents)
+}
+
+// @Summary Export monitor data to CSV
+// @Description Download a CSV file with historical data including status, latency and specific results (HTTP code, DNS IP, etc).
+// @Tags monitors
+// @Security BearerAuth
+// @Param id path int true "Monitor ID"
+// @Success 200 {file} string "CSV content"
+// @Router /monitors/{id}/export [get]
+func (h *Handler) ExportMonitorCSV(c echo.Context) error {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
+	}
+
+	userID := getUserIdFromToken(c)
+
+	monitor, err := database.GetMonitorByIDAndUser(c.Request().Context(), h.DB, id, userID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
+	}
+
+	from, to, err := parseDataParams(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
+	}
+
+	filename := fmt.Sprintf("monitor_%d_export_%s.csv", id, time.Now().Format("20060102_150405"))
+	c.Response().Header().Set(echo.HeaderContentType, "text/csv")
+	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename"+filename)
+	c.Response().WriteHeader(http.StatusOK)
+
+	rows, err := database.ExportCheckResults(c.Request().Context(), h.DB, id, from, to)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	writer := csv.NewWriter(c.Response().Writer)
+	defer writer.Flush()
+
+	writer.Write([]string{"Date/Time", "Status", "Latency (ms)", "Detail (Code/IP)", "Message"})
+
+	for rows.Next() {
+		var checkedAt time.Time
+		var status string
+		var latency int
+		var code int
+		var resultVal *string
+		var msg string
+
+		if err := rows.Scan(&checkedAt, &status, &latency, &code, &resultVal, &msg); err != nil {
+			continue
+		}
+
+		var displayValue string
+
+		switch monitor.Type {
+		case models.TypeHTTP:
+			displayValue = fmt.Sprintf("%d", code)
+		case models.TypeDNS:
+			if resultVal != nil {
+				displayValue = *resultVal
+			} else {
+				displayValue = "N/A"
+			}
+		case models.TypePort:
+			if resultVal != nil {
+				displayValue = *resultVal
+			} else {
+				displayValue = "Connected"
+			}
+		}
+
+		writer.Write([]string{
+			checkedAt.Format(time.RFC3339),
+			status,
+			fmt.Sprintf("%d", latency),
+			displayValue,
+			msg,
+		})
+	}
+
+	return nil
 }
