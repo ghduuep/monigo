@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5"
@@ -45,10 +46,10 @@ func ResolveIncident(ctx context.Context, db *pgxpool.Pool, monitorID int) (*mod
 	return &inc, nil
 }
 
-func GetIncidentsByID(ctx context.Context, db *pgxpool.Pool, monitorID int) ([]*models.Incident, error) {
-	query := `SELECT * from incidents WHERE monitor_id = $1 ORDER BY started_at DESC LIMIT 10`
+func GetIncidentsByID(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) ([]*models.Incident, error) {
+	query := `SELECT * from incidents WHERE monitor_id = $1 WHERE started_at >= $2 AND started_at <= $3 ORDER BY started_at DESC`
 
-	rows, err := db.Query(ctx, query, monitorID)
+	rows, err := db.Query(ctx, query, monitorID, from, to)
 	if err != nil {
 		return nil, err
 	}

@@ -128,6 +128,45 @@ func (h *Handler) DeleteMonitor(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func parseDataParams(c echo.Context) (time.Time, time.Time, error) {
+	var from, to time.Time
+	to = time.Now()
+
+	startDateStr := c.QueryParam("start_date")
+	endDateStr := c.QueryParam("end_date")
+	period := c.QueryParam("period")
+
+	if startDateStr != "" && endDateStr != "" {
+		layout := "2006-01-02"
+
+		parsedStart, err := time.Parse(layout, startDateStr)
+		if err != nil {
+			return from, to, err
+		}
+		from = parsedStart
+
+		parsedEnd, err := time.Parse(layout, endDateStr)
+		if err != nil {
+			return from, to, err
+		}
+
+		to = parsedEnd.Add(24 * time.Hour).Add(-1 * time.Second)
+	} else {
+		switch period {
+		case "7d":
+			from = time.Now().AddDate(0, 0, -7)
+		case "30d":
+			from = time.Now().AddDate(0, 0, -30)
+		case "24h":
+			from = time.Now().Add(-24 * time.Hour)
+		default:
+			from = time.Now().Add(-24 * time.Hour)
+		}
+	}
+
+	return from, to, nil
+}
+
 // @Summary Get monitor stats
 // @Description Get uptime and latency stats for a monitor
 // @Tags monitors
@@ -151,41 +190,9 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 
-	var from, to time.Time
-	to = time.Now()
-
-	startDateStr := c.QueryParam("start_date")
-	endDateStr := c.QueryParam("end_date")
-	period := c.QueryParam("period")
-
-	if startDateStr != "" && endDateStr != "" {
-		layout := "2006-01-02"
-
-		parsedStart, err := time.Parse(layout, startDateStr)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid start_date. Use YYYY-MM-DD format"})
-		}
-
-		from = parsedStart
-
-		parsedEnd, err := time.Parse(layout, endDateStr)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid start_date. Use YYYY-MM-DD format"})
-		}
-
-		to = parsedEnd.Add(24 * time.Hour).Add(-1 * time.Second)
-
-	} else {
-		switch period {
-		case "7d":
-			from = time.Now().AddDate(0, 0, -7)
-		case "30d":
-			from = time.Now().AddDate(0, 0, -30)
-		case "24h":
-			from = time.Now().Add(-24 * time.Hour)
-		default:
-			from = time.Now().Add(-24 * time.Hour)
-		}
+	from, to, err := parseDataParams(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters"})
 	}
 
 	stats, err := database.GetMonitorStats(c.Request().Context(), h.DB, id, from, to)
@@ -210,7 +217,12 @@ func (h *Handler) GetMonitorLastChecks(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 
-	checks, err := database.GetLastChecks(c.Request().Context(), h.DB, id)
+	from, to, err := parseDataParams(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
+	}
+
+	checks, err := database.GetLastChecks(c.Request().Context(), h.DB, id, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get checks."})
 	}
@@ -232,7 +244,12 @@ func (h *Handler) GetMonitorLastIncidents(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 
-	incidents, err := database.GetIncidentsByID(c.Request().Context(), h.DB, id)
+	from, to, err := parseDataParams(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
+	}
+
+	incidents, err := database.GetIncidentsByID(c.Request().Context(), h.DB, id, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get incidents."})
 	}

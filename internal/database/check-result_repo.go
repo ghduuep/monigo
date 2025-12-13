@@ -51,15 +51,15 @@ func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int, from,
 	return stats, nil
 }
 
-func GetLastChecks(ctx context.Context, db *pgxpool.Pool, monitorID int) ([]*models.CheckResult, error) {
+func GetLastChecks(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) ([]*models.CheckResult, error) {
 	query := `SELECT id, monitor_id, status, result_value, message, status_code, latency_ms, checked_at
 	FROM check_results
 	WHERE monitor_id = $1
+	AND checked_at >= $2 AND checked_at <= $3
 	ORDER BY checked_at DESC
-	LIMIT 30
 	`
 
-	rows, err := db.Query(ctx, query, monitorID)
+	rows, err := db.Query(ctx, query, monitorID, from, to)
 	if err != nil {
 		return nil, err
 	}
