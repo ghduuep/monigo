@@ -128,9 +128,9 @@ func DeleteChannel(ctx context.Context, db *pgxpool.Pool, channelID int, userID 
 	return nil
 }
 
-func buildUpdateQuery(userID int, dto dto.UpdateUserRequest) (string, []interface{}, error) {
+func buildUpdateQuery(userID int, dto dto.UpdateUserRequest) (string, []any, error) {
 	var setParts []string
-	var args []interface{}
+	var args []any
 	argID := 1
 
 	if dto.Email != nil {
@@ -149,7 +149,7 @@ func buildUpdateQuery(userID int, dto dto.UpdateUserRequest) (string, []interfac
 		return "", nil, fmt.Errorf("no data")
 	}
 
-	query := fmt.Sprintf("UPDATE users SET %s WHERE id = %d", strings.Join(setParts, ", "), argID)
+	query := fmt.Sprintf("UPDATE users SET %s WHERE id = $%d", strings.Join(setParts, ", "), argID)
 
 	args = append(args, userID)
 

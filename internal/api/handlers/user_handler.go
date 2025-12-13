@@ -75,6 +75,10 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 
 	userID := getUserIdFromToken(c)
 
+	if id != userID {
+		return c.JSON(http.StatusForbidden, map[string]string{"error": "You can only edit your user."})
+	}
+
 	var dto dto.UpdateUserRequest
 	if err := c.Bind(&dto); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data."})

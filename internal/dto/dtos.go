@@ -47,6 +47,6 @@ type CreateChannelRequest struct {
 }
 
 type UpdateUserRequest struct {
-	Email    *string `json:"email"`
-	Password *string `json:"password"`
+	Email    *string `json:"email" validate:"omitempty,email"`
+	Password *string `json:"password" validate:"omitempty,min=6"`
 }
