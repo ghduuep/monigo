@@ -75,18 +75,7 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 }
 
 func (h *Handler) UpdateUser(c echo.Context) error {
-	idParam := c.Param("id")
-
-	id, err := strconv.Atoi(idParam)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
-	}
-
 	userID := getUserIdFromToken(c)
-
-	if id != userID {
-		return c.JSON(http.StatusForbidden, map[string]string{"error": "You can only edit your user."})
-	}
 
 	var dto dto.UpdateUserRequest
 	if err := c.Bind(&dto); err != nil {
@@ -110,7 +99,7 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 		_ = database.AddToBlackList(ctx, h.RDB, tokenString, 72*time.Hour)
 	}
 
-	err = database.UpdateUser(ctx, h.DB, id, dto)
+	err := database.UpdateUser(ctx, h.DB, userID, dto)
 	if err != nil {
 		if err.Error() == "no data" {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
