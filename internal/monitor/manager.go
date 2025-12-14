@@ -46,20 +46,30 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notificat
 }
 
 func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, dispatcher notification.NotificationDispatcher) {
-	ticker := time.NewTicker(m.Interval)
-	defer ticker.Stop()
+	const downInterval = 30 * time.Second
+
+	timer := time.NewTimer(m.Interval)
+	defer timer.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			processCheck(ctx, db, &m, dispatcher)
+		case <-timer.C:
+			currentStatus := processCheck(ctx, db, &m, dispatcher)
+
+			nextCheckDuration := m.Interval
+
+			if currentStatus == models.StatusDown {
+				nextCheckDuration = downInterval
+			}
+
+			timer.Reset(nextCheckDuration)
 		}
 	}
 }
 
-func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, dispatcher notification.NotificationDispatcher) {
+func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, dispatcher notification.NotificationDispatcher) models.MonitorStatus {
 	result := performCheck(*m)
 
 	var config models.DNSConfig
@@ -71,7 +81,6 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 
 		if err := json.Unmarshal(m.Config, &config); err != nil {
 			log.Printf("[ERROR] Failed to unmarsh json config")
-			return
 		} else {
 			if config.ExpectedValue == "" {
 				log.Printf("[INFO] Learning DNS value for monitor %d: %s", m.ID, result.ResultValue)
@@ -121,6 +130,8 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 			log.Printf("[ERROR] Failed to update last check for monitor %d.: %v", m.ID, err)
 		}
 	}
+
+	return result.Status
 }
 
 func performCheck(m models.Monitor) models.CheckResult {
