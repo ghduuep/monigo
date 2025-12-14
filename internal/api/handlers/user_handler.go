@@ -1,14 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
-	"time"
 )
 
 func (h *Handler) GetUsers(c echo.Context) error {
@@ -34,17 +37,28 @@ func (h *Handler) GetUsers(c echo.Context) error {
 func (h *Handler) GetUser(c echo.Context) error {
 	userID := getUserIdFromToken(c)
 
+	cacheKey := fmt.Sprintf("user:%d:profile", userID)
+
+	var response dto.UserResponse
+	if h.getCache(c.Request().Context(), cacheKey, &response) {
+		return c.JSON(http.StatusOK, response)
+	}
+
 	user, err := database.GetUserByID(c.Request().Context(), h.DB, userID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "User not found."})
 	}
 
-	return c.JSON(http.StatusOK, dto.UserResponse{
+	response = dto.UserResponse{
 		ID:        user.ID,
 		Username:  user.Username,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,
-	})
+	}
+
+	go h.setCache(context.Background(), cacheKey, response, 1*time.Hour)
+
+	return c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) DeleteUser(c echo.Context) error {
@@ -53,6 +67,10 @@ func (h *Handler) DeleteUser(c echo.Context) error {
 	if err := database.DeleteUser(c.Request().Context(), h.DB, userID); err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "User not found."})
 	}
+
+	cacheKey := fmt.Sprintf("user:%d:profile", userID)
+	cacheChannels := fmt.Sprintf("user:%d:channels", userID)
+	h.invalidateCache(c.Request().Context(), cacheKey, cacheChannels)
 
 	return c.NoContent(http.StatusOK)
 }
@@ -95,6 +113,9 @@ func (h *Handler) UpdateUser(c echo.Context) error {
 
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update user."})
 	}
+
+	cacheKey := fmt.Sprintf("user:%d:profile", userID)
+	h.invalidateCache(ctx, cacheKey)
 
 	return c.NoContent(http.StatusOK)
 }

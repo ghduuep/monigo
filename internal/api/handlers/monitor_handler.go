@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"net/http"
@@ -209,7 +210,7 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get stats."})
 	}
 
-	go h.setCache(c.Request().Context(), cacheKey, stats, 5*time.Minute)
+	go h.setCache(context.Background(), cacheKey, stats, 5*time.Minute)
 
 	return c.JSON(http.StatusOK, stats)
 }

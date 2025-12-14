@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -34,7 +35,7 @@ func (h *Handler) GetChannels(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch channels."})
 	}
 
-	go h.setCache(c.Request().Context(), cacheKey, channels, 1*time.Hour)
+	go h.setCache(context.Background(), cacheKey, channels, 1*time.Hour)
 
 	return c.JSON(http.StatusOK, channels)
 }
