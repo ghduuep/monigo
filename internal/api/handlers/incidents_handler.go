@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ghduuep/pingly/internal/database"
+	"github.com/ghduuep/pingly/internal/models"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,15 +22,28 @@ import (
 func (h *Handler) GetIncidents(c echo.Context) error {
 	userID := getUserIdFromToken(c)
 
+	qStart := c.QueryParam("start_date")
+	qEnd := c.QueryParam("end_date")
+	qPeriod := c.QueryParam("period")
+
+	cacheKey := fmt.Sprintf("user:%d:incidents:%s:%s:%s", userID, qStart, qEnd, qPeriod)
+
+	var incidents []*models.Incident
+	if h.getCache(c.Request().Context(), cacheKey, &incidents) {
+		return c.JSON(http.StatusOK, incidents)
+	}
+
 	from, to, err := parseDataParams(c)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
-	incidents, err := database.GetIncidentsByUserID(c.Request().Context(), h.DB, userID, from, to)
+	incidents, err = database.GetIncidentsByUserID(c.Request().Context(), h.DB, userID, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get incidents."})
 	}
+
+	go h.setCache(c.Request().Context(), cacheKey, incidents, 30*time.Second)
 
 	return c.JSON(http.StatusOK, incidents)
 }

@@ -197,10 +197,19 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters"})
 	}
 
-	stats, err := database.GetMonitorStats(c.Request().Context(), h.DB, id, from, to)
+	cacheKey := fmt.Sprintf("monitor:%d:stats:%s:%s", id, from.Format("20060102"), to.Format("v20060102"))
+
+	var stats dto.MonitorStatsResponse
+	if h.getCache(c.Request().Context(), cacheKey, &stats) {
+		return c.JSON(http.StatusOK, stats)
+	}
+
+	stats, err = database.GetMonitorStats(c.Request().Context(), h.DB, id, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get stats."})
 	}
+
+	go h.setCache(c.Request().Context(), cacheKey, stats, 5*time.Minute)
 
 	return c.JSON(http.StatusOK, stats)
 }
