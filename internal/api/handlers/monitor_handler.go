@@ -220,7 +220,7 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get stats."})
 	}
 
-	go h.setCache(context.Background(), cacheKey, stats, 5*time.Minute)
+	go h.setCache(context.Background(), cacheKey, stats, 30*time.Second)
 
 	return c.JSON(http.StatusOK, stats)
 }
