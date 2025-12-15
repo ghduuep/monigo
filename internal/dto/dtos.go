@@ -30,7 +30,7 @@ type MonitorRequest struct {
 	Config           json.RawMessage    `json:"config" db:"config" swaggertype:"string"`
 	Interval         string             `json:"interval" validate:"required,oneof=30s 1m 5m 30m 1h 12h 24h"`
 	Timeout          string             `json:"timeout" validate:"required,oneof=1s 15s 30s 45s 60s"`
-	LatencyThreshold time.Duration      `json:"latency_threshold" db:"latency_threshold"`
+	LatencyThreshold int64              `json:"latency_threshold_ms" db:"latency_threshold_ms"`
 }
 
 type MonitorStatsResponse struct {
@@ -40,6 +40,7 @@ type MonitorStatsResponse struct {
 	MinLatency       float64 `json:"min_latency"`
 	MaxLatency       float64 `json:"max_latency"`
 	TotalChecks      int     `json:"total_checks"`
+	ApdexScore       float64 `json:"apdex_score"`
 }
 
 type CreateChannelRequest struct {
@@ -57,7 +58,7 @@ type UpdateMonitorRequest struct {
 	Interval         *string         `json:"interval" validate:"omitempty,oneof=30s 1m 5m 30m 1h 12h 24h"`
 	Timeout          *string         `json:"timeout" validate:"omitempty,oneof=1s 30s 45s 60s"`
 	Config           json.RawMessage `json:"config" validate:"omitempty"`
-	LatencyThreshold *time.Duration  `json:"latency_threshold" db:"latency_threshold"`
+	LatencyThreshold *int64          `json:"latency_threshold_ms" db:"latency_threshold_ms"`
 }
 
 type UpdateChannelRequest struct {

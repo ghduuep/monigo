@@ -55,7 +55,7 @@ type Monitor struct {
 	Config           json.RawMessage `json:"config" db:"config" swaggertype:"string"`
 	Interval         time.Duration   `json:"interval" db:"interval" swaggertype:"integer"`
 	Timeout          time.Duration   `json:"timeout" db:"timeout" swaggertype:"integer"`
-	LatencyThreshold time.Duration   `json:"latency_threshold" db:"latency_threshold"`
+	LatencyThreshold int64           `json:"latency_threshold_ms" db:"latency_threshold_ms"`
 	LastCheckStatus  MonitorStatus   `json:"last_check_status" db:"last_check_status"`
 	LastCheckAt      *time.Time      `json:"last_check_at" db:"last_check_at"`
 	StatusChangedAt  *time.Time      `json:"status_changed_at" db:"status_changed_at"`
