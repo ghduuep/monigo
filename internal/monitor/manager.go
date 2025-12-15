@@ -11,8 +11,13 @@ import (
 	"time"
 )
 
+type activeMonitor struct {
+	cancel context.CancelFunc
+	config models.Monitor
+}
+
 func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notification.NotificationDispatcher) {
-	activeMonitors := make(map[int]context.CancelFunc)
+	activeMonitors := make(map[int]*activeMonitor)
 
 	for {
 		monitors, err := database.GetAllMonitors(ctx, db)
@@ -25,17 +30,25 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notificat
 		currentMonitorIDs := make(map[int]bool)
 		for _, m := range monitors {
 			currentMonitorIDs[m.ID] = true
-			if _, exists := activeMonitors[m.ID]; !exists {
-				monitorCtx, cancel := context.WithCancel(ctx)
-				activeMonitors[m.ID] = cancel
-				go runMonitorRoutine(monitorCtx, db, *m, dispatcher)
-				log.Printf("Started monitoring for monitor ID %d", m.ID)
+			active, exists := activeMonitors[m.ID]
+
+			if !exists {
+				startNewMonitor(ctx, db, *m, dispatcher, activeMonitors)
+				continue
+			}
+
+			if hasMonitorChanges(active.config, *m) {
+				log.Printf("[INFO] Config changed for monitor %d. Restarting...", m.ID)
+
+				active.cancel()
+
+				startNewMonitor(ctx, db, *m, dispatcher, activeMonitors)
 			}
 		}
 
-		for id, cancel := range activeMonitors {
+		for id, active := range activeMonitors {
 			if _, exists := currentMonitorIDs[id]; !exists {
-				cancel()
+				active.cancel()
 				delete(activeMonitors, id)
 				log.Printf("Stopped monitoring for monitor ID %d", id)
 			}
@@ -43,6 +56,38 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notificat
 
 		time.Sleep(10 * time.Second)
 	}
+}
+
+func startNewMonitor(ctx context.Context, db *pgxpool.Pool, m models.Monitor, dispatcher notification.NotificationDispatcher, activeMap map[int]*activeMonitor) {
+	monitorCtx, cancel := context.WithCancel(ctx)
+
+	activeMap[m.ID] = &activeMonitor{
+		cancel: cancel,
+		config: m,
+	}
+
+	go runMonitorRoutine(monitorCtx, db, m, dispatcher)
+	log.Printf("Started monitoring for monitor ID %d", m.ID)
+}
+
+func hasMonitorChanges(old, new models.Monitor) bool {
+	if old.Target != new.Target {
+		return true
+	}
+
+	if old.Interval != new.Interval {
+		return true
+	}
+
+	if old.Timeout != new.Timeout {
+		return true
+	}
+
+	if string(old.Config) != string(new.Config) {
+		return true
+	}
+
+	return false
 }
 
 func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, dispatcher notification.NotificationDispatcher) {

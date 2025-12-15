@@ -353,3 +353,41 @@ func (h *Handler) ExportMonitorCSV(c echo.Context) error {
 
 	return nil
 }
+
+func (h *Handler) UpdateMonitor(c echo.Context) error {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "ID must be a number."})
+	}
+
+	var req dto.UpdateMonitorRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data."})
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	var intervalDuration, timeoutDuration *time.Duration
+
+	if req.Interval != nil {
+		d, _ := time.ParseDuration(*req.Interval)
+		intervalDuration = &d
+	}
+
+	if req.Timeout != nil {
+		d, _ := time.ParseDuration(*req.Timeout)
+		timeoutDuration = &d
+	}
+
+	userID := getUserIdFromToken(c)
+
+	err = database.UpdateMonitor(c.Request().Context(), h.DB, id, userID, req, intervalDuration, timeoutDuration)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update monitor."})
+	}
+
+	return c.NoContent(http.StatusOK)
+}

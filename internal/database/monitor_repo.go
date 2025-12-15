@@ -2,7 +2,11 @@ package database
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"time"
 
+	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -96,4 +100,53 @@ func GetMonitorByIDAndUser(ctx context.Context, db *pgxpool.Pool, monitorID int,
 	}
 
 	return monitor, nil
+}
+
+func UpdateMonitor(ctx context.Context, db *pgxpool.Pool, monitorID int, userID int, req dto.UpdateMonitorRequest, interval, timeout *time.Duration) error {
+	var setParts []string
+	var args []any
+	argID := 1
+
+	if req.Target != nil {
+		setParts = append(setParts, fmt.Sprintf("target = $%d", argID))
+		args = append(args, *req.Target)
+		argID++
+	}
+
+	if req.Interval != nil {
+		setParts = append(setParts, fmt.Sprintf("interval = $%d", argID))
+		args = append(args, *req.Interval)
+		argID++
+	}
+
+	if req.Timeout != nil {
+		setParts = append(setParts, fmt.Sprintf("timeout = $%d", argID))
+		args = append(args, *req.Timeout)
+		argID++
+	}
+
+	if req.Config != nil {
+		setParts = append(setParts, fmt.Sprintf("config = $%d", argID))
+		args = append(args, req.Config)
+		argID++
+	}
+
+	if len(setParts) == 0 {
+		return nil
+	}
+
+	query := fmt.Sprintf("UPDATE monitors SET %s WHERE id = $%d AND user_id = $%d", strings.Join(setParts, ", "), argID, argID+1)
+
+	args = append(args, monitorID, userID)
+
+	tag, err := db.Exec(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("monitor not found or no permission")
+	}
+
+	return nil
 }

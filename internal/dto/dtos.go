@@ -50,3 +50,10 @@ type UpdateUserRequest struct {
 	Email    *string `json:"email" validate:"omitempty,email"`
 	Password *string `json:"password" validate:"omitempty,min=6"`
 }
+
+type UpdateMonitorRequest struct {
+	Target   *string         `json:"target" validate:"omitempty"`
+	Interval *string         `json:"interval" validate:"omitempty,oneof=30s 1m 5m 30m 1h 12h 24h"`
+	Timeout  *string         `json:"timeout" validate:"omitempty,oneof=1s 30s 45s 60s"`
+	Config   json.RawMessage `json:"config" validate:"omitempty"`
+}
