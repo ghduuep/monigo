@@ -18,11 +18,8 @@ func main() {
 	}
 
 	emailService := notification.NewEmailService(
-		os.Getenv("SMTP_HOST"),
-		os.Getenv("SMTP_PASSWORD"),
-		os.Getenv("SMTP_PORT"),
-		os.Getenv("SMTP_USERNAME"),
-		os.Getenv("EMAIL_SENDER"),
+		os.Getenv("RESEND_API_KEY")
+		os.Getenv("EMAIL_SENDER")
 	)
 
 	telegramService := notification.NewTelegramService(
