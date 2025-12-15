@@ -107,7 +107,7 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 
 			nextCheckDuration := m.Interval
 
-			if currentStatus == models.StatusDown {
+			if currentStatus == models.StatusDown || currentStatus == models.StatusDegraded {
 				nextCheckDuration = downInterval
 			}
 
