@@ -14,26 +14,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (h *Handler) GetUsers(c echo.Context) error {
-
-	users, err := database.GetAllUsers(c.Request().Context(), h.DB)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
-	}
-
-	var response []dto.UserResponse
-	for _, u := range users {
-		response = append(response, dto.UserResponse{
-			ID:        u.ID,
-			Username:  u.Username,
-			Email:     u.Email,
-			CreatedAt: u.CreatedAt,
-		})
-	}
-
-	return c.JSON(http.StatusOK, response)
-}
-
 func (h *Handler) GetUser(c echo.Context) error {
 	userID := getUserIdFromToken(c)
 

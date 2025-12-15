@@ -18,22 +18,6 @@ func CreateUser(ctx context.Context, db *pgxpool.Pool, user *models.User) error 
 	return err
 }
 
-func GetAllUsers(ctx context.Context, db *pgxpool.Pool) ([]models.User, error) {
-	query := `SELECT * FROM users`
-
-	rows, err := db.Query(ctx, query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.User])
-	if err != nil {
-		return nil, err
-	}
-	return users, nil
-}
-
 func DeleteUser(ctx context.Context, db *pgxpool.Pool, id int) error {
 	query := `DELETE FROM users WHERE id = $1`
 
