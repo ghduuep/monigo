@@ -147,8 +147,8 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 	queryViewPolicy := `
 	SELECT add_continuous_aggregate_policy('monitor_stats_hourly',
 		start_offset => NULL,
-		end_offset => INTERVAL '1 hour',
-		schedule_interval => INTERVAL '30 minutes',
+		end_offset => INTERVAL '5 minutes',
+		schedule_interval => INTERVAL '5 minutes',
 		if_not_exists => TRUE);
 	`
 	if _, err := pool.Exec(ctx, queryViewPolicy); err != nil {

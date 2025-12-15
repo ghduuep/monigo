@@ -208,7 +208,7 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters"})
 	}
 
-	cacheKey := fmt.Sprintf("monitor:%d:stats:%s:%s", id, from.Format("20060102"), to.Format("v20060102"))
+	cacheKey := fmt.Sprintf("monitor:%d:stats:%s:%s", id, from.Format("20060102"), to.Format("20060102"))
 
 	var stats dto.MonitorStatsResponse
 	if h.getCache(c.Request().Context(), cacheKey, &stats) {
