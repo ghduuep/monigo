@@ -36,7 +36,7 @@ func InitDB() *pgxpool.Pool {
 }
 
 func createTables(ctx context.Context, pool *pgxpool.Pool) error {
-	query := `
+	queryStandard := `
 	CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
 		username TEXT UNIQUE NOT NULL,
@@ -79,7 +79,12 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		error_cause TEXT
 	);
 	CREATE INDEX IF NOT EXISTS idx_incidents_monitor_id ON incidents(monitor_id);
+	`
+	if _, err := pool.Exec(ctx, queryStandard); err != nil {
+		return err
+	}
 
+	queryTimescaleBase := `
 	CREATE EXTENSION IF NOT EXISTS timescaledb;
 
 	CREATE TABLE IF NOT EXISTS check_results (
@@ -93,9 +98,19 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown'))
 	);
+	`
+	if _, err := pool.Exec(ctx, queryTimescaleBase); err != nil {
+		return err
+	}
 
+	queryHypertable := `
 	SELECT create_hypertable('check_results', 'checked_at', chunk_time_interval => INTERVAL '1 day', if_not_exists => TRUE);
+	`
+	if _, err := pool.Exec(ctx, queryHypertable); err != nil {
+		return err
+	}
 
+	queryCompression := `
 	CREATE INDEX IF NOT EXISTS idx_check_results_monitor_date ON check_results(monitor_id, checked_at DESC);
 
 	ALTER TABLE check_results SET (
@@ -105,9 +120,13 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 	);
 
 	SELECT add_compression_policy('check_results', INTERVAL '3 days', if_not_exists => TRUE);
+	SELECT add_retention_policy('check_results', INTERVAL '6 months', if_not_exists => TRUE);
+	`
+	if _, err := pool.Exec(ctx, queryCompression); err != nil {
+		return err
+	}
 
-	SELECT add_retention_policy('check_results', INTERVAL '12 months', if_not_exists => TRUE);
-
+	queryView := `
 	CREATE MATERIALIZED VIEW IF NOT EXISTS monitor_stats_hourly
 	WITH (timescaledb.continuous) AS
 	SELECT
@@ -120,13 +139,21 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		COUNT(*) as total_checks
 	FROM check_results
 	GROUP BY bucket, monitor_id;
+	`
+	if _, err := pool.Exec(ctx, queryView); err != nil {
+		return err
+	}
 
+	queryViewPolicy := `
 	SELECT add_continuous_aggregate_policy('monitor_stats_hourly',
 		start_offset => NULL,
 		end_offset => INTERVAL '1 hour',
 		schedule_interval => INTERVAL '30 minutes',
-		if_not_exists => TRUE);	
+		if_not_exists => TRUE);
 	`
-	_, err := pool.Exec(ctx, query)
-	return err
+	if _, err := pool.Exec(ctx, queryViewPolicy); err != nil {
+		return err
+	}
+
+	return nil
 }
