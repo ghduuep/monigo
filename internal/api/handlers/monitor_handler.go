@@ -88,13 +88,14 @@ func (h *Handler) CreateMonitor(c echo.Context) error {
 	timeoutDuration, _ := time.ParseDuration(req.Timeout)
 
 	monitor := models.Monitor{
-		UserID:    userID,
-		Target:    req.Target,
-		Type:      req.Type,
-		Config:    req.Config,
-		Interval:  intervalDuration,
-		Timeout:   timeoutDuration,
-		CreatedAt: time.Now(),
+		UserID:           userID,
+		Target:           req.Target,
+		Type:             req.Type,
+		Config:           req.Config,
+		Interval:         intervalDuration,
+		Timeout:          timeoutDuration,
+		LatencyThreshold: req.LatencyThreshold,
+		CreatedAt:        time.Now(),
 	}
 
 	if err := database.CreateMonitor(c.Request().Context(), h.DB, &monitor); err != nil {
@@ -194,7 +195,7 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 
 	userID := getUserIdFromToken(c)
 
-	_, err = database.GetMonitorByIDAndUser(c.Request().Context(), h.DB, id, userID)
+	monitor, err := database.GetMonitorByIDAndUser(c.Request().Context(), h.DB, id, userID)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
@@ -214,7 +215,7 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 		return c.JSON(http.StatusOK, stats)
 	}
 
-	stats, err = database.GetMonitorStats(c.Request().Context(), h.DB, id, from, to)
+	stats, err = database.GetMonitorStats(c.Request().Context(), h.DB, id, monitor.LatencyThreshold, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get stats."})
 	}

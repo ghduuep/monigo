@@ -49,7 +49,22 @@ func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int, thres
 	}
 
 	if threshold > 0 && stats.TotalChecks > 0 {
+		var satisfactory, tolerating int64
 
+		queryApdex := `
+				SELECT
+                COUNT(*) FILTER (WHERE status = 'up' AND latency_ms <= $1),
+                COUNT(*) FILTER (WHERE status = 'up' AND latency_ms > $1 AND latency_ms <= ($1 * 4))
+            FROM check_results
+            WHERE monitor_id = $2 AND checked_at >= $3 AND checked_at <= $4
+            `
+
+		err := db.QueryRow(ctx, queryApdex, monitorID, from, to).Scan(&satisfactory, &tolerating)
+
+		if err == nil {
+			score := (float64(satisfactory) + (float64(tolerating) / 2.0)) / float64(stats.TotalChecks)
+			stats.ApdexScore = score
+		}
 	}
 	return stats, nil
 }
