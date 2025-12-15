@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/notification/templates"
+	"github.com/resend/resend-go/v3"
 	"github.com/twilio/twilio-go"
 	twilioApi "github.com/twilio/twilio-go/rest/api/v2010"
 	"net/http"
-	"net/smtp"
 )
 
 type Notifier interface {
@@ -17,42 +17,28 @@ type Notifier interface {
 }
 
 type EmailService struct {
-	Host     string
-	Password string
-	Port     string
-	Username string
-	Sender   string
+	Client *resend.Client
+	Sender string
 }
 
-func NewEmailService(host, password, port, username, sender string) *EmailService {
+func NewEmailService(apiKey, sender string) *EmailService {
+	client := resend.NewClient(apiKey)
 	return &EmailService{
-		Host:     host,
-		Password: password,
-		Port:     port,
-		Username: username,
-		Sender:   sender,
+		Client: client,
+		Sender: sender,
 	}
 }
 
 func (s *EmailService) Send(to, subject, body string) error {
-	auth := smtp.PlainAuth("", s.Username, s.Password, s.Host)
-	addr := fmt.Sprintf("%s:%s", s.Host, s.Port)
-
-	headers := make(map[string]string)
-	headers["From"] = s.Sender
-	headers["To"] = to
-	headers["Subject"] = subject
-	headers["MIME-Version"] = "1.0"
-	headers["Content-Type"] = "text/html; charset=\"UTF-8\""
-
-	message := ""
-	for k, v := range headers {
-		message += fmt.Sprintf("%s: %s\r\n", k, v)
+	params := &resend.SendEmailRequest{
+		To:      []string{to},
+		From:    s.Sender,
+		Subject: subject,
+		Html:    body,
 	}
 
-	message += "\r\n" + body
-
-	return smtp.SendMail(addr, auth, s.Sender, []string{to}, []byte(message))
+	_, err := s.Client.Emails.Send(params)
+	return err
 }
 
 func (s *EmailService) SendStatusAlert(to string, m models.Monitor, result models.CheckResult, inc *models.Incident) error {
