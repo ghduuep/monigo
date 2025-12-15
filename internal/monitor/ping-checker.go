@@ -40,7 +40,7 @@ func checkPort(m models.Monitor) models.CheckResult {
 		}
 	}
 
-	conn.Close()
+	defer conn.Close()
 
 	return models.CheckResult{
 		MonitorID:   m.ID,

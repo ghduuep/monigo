@@ -59,7 +59,7 @@ func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int, thres
             WHERE monitor_id = $2 AND checked_at >= $3 AND checked_at <= $4
             `
 
-		err := db.QueryRow(ctx, queryApdex, monitorID, from, to).Scan(&satisfactory, &tolerating)
+		err := db.QueryRow(ctx, queryApdex, threshold, monitorID, from, to).Scan(&satisfactory, &tolerating)
 
 		if err == nil {
 			score := (float64(satisfactory) + (float64(tolerating) / 2.0)) / float64(stats.TotalChecks)
