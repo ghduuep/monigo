@@ -75,16 +75,18 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 	CREATE INDEX IF NOT EXISTS idx_monitors_user_id ON monitors(user_id);
 
 	CREATE TABLE IF NOT EXISTS check_results (
-		id SERIAL PRIMARY KEY,
+		id SERIAL,
 		monitor_id INTEGER REFERENCES monitors(id) ON DELETE CASCADE,
 		status VARCHAR(10) NOT NULL,
 		result_value TEXT,
 		message TEXT,
 		status_code INTEGER,
 		latency_ms INTEGER,
-		checked_at TIMESTAMPTZ DEFAULT NOW(),
+		checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown'))
+		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown')),
+
+		PRIMARY KEY (id, checked_at)
 	);
 
 	CREATE EXTENSION IF NOT EXISTS timescaledb;
