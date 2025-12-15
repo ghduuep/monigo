@@ -138,14 +138,14 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 		}
 	}
 
-	if err := database.CreateCheckResult(ctx, db, &result); err != nil {
-		log.Printf("[ERROR] failed to save check result for monitor %d: %v", m.ID, err)
-	}
-
 	if result.Status == models.StatusUp && m.LatencyThreshold > 0 && result.Latency > int64(m.LatencyThreshold) {
 		log.Printf("[LOG] Latency threshold achieved for monitor %d", m.ID)
 		result.Status = models.StatusDegraded
 		result.Message = fmt.Sprintf("Low performance detected: %d Limit: %d", result.Latency, m.LatencyThreshold)
+	}
+
+	if err := database.CreateCheckResult(ctx, db, &result); err != nil {
+		log.Printf("[ERROR] failed to save check result for monitor %d: %v", m.ID, err)
 	}
 
 	if result.Status != m.LastCheckStatus && result.Status != models.StatusUnknown {

@@ -9,7 +9,7 @@ import (
 
 func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
 	emoji := "🟢"
-	color := "#38a169" // Verde
+	color := "#38a169"
 
 	timeLayout := "02/01/2006 15:04:05"
 	var timeDetails string
@@ -17,8 +17,13 @@ func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, inc *models
 	if inc != nil {
 		if res.Status == models.StatusDown {
 			emoji = "🔴"
-			color = "#e53e5e" // Vermelho
+			color = "#e53e5e"
 			timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
+			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
+		} else if res.Status == models.StatusDegraded {
+			emoji = "🟡"
+			color = "#d69e2e"
+			timeDetails += fmt.Sprintf("<p><strong>Início da Degradação:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
 			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
 		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
 			timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
@@ -33,15 +38,25 @@ func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, inc *models
 				timeDetails += fmt.Sprintf("<p><strong>Duração:</strong> %s</p>", inc.Duration.Round(time.Second).String())
 			}
 			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
+		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDegraded {
+			timeDetails += "<p><strong>Performance normalizada.</strong></p>"
+			if inc.Duration != nil {
+				timeDetails += fmt.Sprintf("<p><strong>Duração da instabilidade:</strong> %s</p>", inc.Duration.Round(time.Second).String())
+			}
 		}
 	}
 
-	subject := fmt.Sprintf("%s %s está %s", emoji, m.Target, res.Status)
+	subjectStatus := string(res.Status)
+	if res.Status == models.StatusDegraded {
+		subjectStatus = "Lento / Degradado"
+	}
+
+	subject := fmt.Sprintf("%s %s está %s", emoji, m.Target, subjectStatus)
 
 	body := fmt.Sprintf(`
 		<h2>Atualização de Status HTTP</h2>
 		<p>O monitor <strong>%s</strong> mudou para <span style="color:%s"><strong>%s</strong></span>.</p>
-		<p><strong>Motivo:</strong> %s</p>
+		<p><strong>Detalhes:</strong> %s</p>
 		<p><strong>Latência:</strong> %vms</p>
 		%s
 	`, m.Target, color, res.Status, res.Message, res.Latency, timeDetails)
@@ -105,7 +120,7 @@ func BuildEmailDNSChangedMessage(m models.Monitor, res models.CheckResult, dnsTy
 
 func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
 	emoji := "🟢"
-	color := "#38a169" // Verde
+	color := "#38a169"
 	statusText := "CONECTADO"
 
 	timeLayout := "02/01/2006 15:04:05"
@@ -114,9 +129,15 @@ func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, inc *models
 	if inc != nil {
 		if res.Status == models.StatusDown {
 			emoji = "🔴"
-			color = "#e53e5e" // Vermelho
+			color = "#e53e5e"
 			statusText = "FALHA"
 			timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
+			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
+		} else if res.Status == models.StatusDegraded {
+			emoji = "🟡"
+			color = "#d69e2e"
+			statusText = "LENTO"
+			timeDetails += fmt.Sprintf("<p><strong>Início da Lentidão:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
 			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
 		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
 			timeDetails += fmt.Sprintf("<p><strong>Começou em:</strong> %s</p>", inc.StartedAt.Format(timeLayout))
@@ -127,6 +148,11 @@ func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, inc *models
 				timeDetails += fmt.Sprintf("<p><strong>Tempo de inatividade:</strong> %s</p>", inc.Duration.Round(time.Second).String())
 			}
 			timeDetails += fmt.Sprintf("<p><strong>Incidente ID:</strong> #%d</p>", inc.ID)
+		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDegraded {
+			timeDetails += "<p><strong>Conexão estabilizada (Latência normal).</strong></p>"
+			if inc.Duration != nil {
+				timeDetails += fmt.Sprintf("<p><strong>Duração da instabilidade:</strong> %s</p>", inc.Duration.Round(time.Second).String())
+			}
 		}
 	}
 

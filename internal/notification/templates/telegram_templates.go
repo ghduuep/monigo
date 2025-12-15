@@ -13,6 +13,9 @@ func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, inc *mod
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
 		statusText = "DOWN"
+	} else if res.Status == models.StatusDegraded {
+		emoji = "🟡"
+		statusText = "LENTO"
 	} else {
 		emoji = "🟢"
 		statusText = "UP"
@@ -21,7 +24,7 @@ func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, inc *mod
 	subject := fmt.Sprintf("%s Monitor HTTP: %s", emoji, m.Target)
 
 	body := fmt.Sprintf("\n\n📊 *Status:* %s", statusText)
-	body += fmt.Sprintf("\n🔍 *Motivo:* %s", res.Message)
+	body += fmt.Sprintf("\n🔍 *Detalhes:* %s", res.Message)
 	body += fmt.Sprintf("\n⚡ *Latência:* %dms", res.Latency)
 
 	timeLayout := "02/01 15:04:05"
@@ -31,12 +34,19 @@ func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, inc *mod
 
 		if res.Status == models.StatusDown {
 			body += fmt.Sprintf("\n🕒 *Começou em:* %s", inc.StartedAt.Format(timeLayout))
+		} else if res.Status == models.StatusDegraded {
+			body += fmt.Sprintf("\n🕒 *Início da Lentidão:* %s", inc.StartedAt.Format(timeLayout))
 		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
 			if inc.ResolvedAt != nil {
 				body += fmt.Sprintf("\n🕒 *Resolvido em:* %s", inc.ResolvedAt.Format(timeLayout))
 			}
 			if inc.Duration != nil {
 				body += fmt.Sprintf("\n⏱ *Duração da Queda:* %s", inc.Duration.Round(time.Second).String())
+			}
+		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDegraded {
+			body += "\n✅ *Performance Normalizada*"
+			if inc.Duration != nil {
+				body += fmt.Sprintf("\n⏱ *Duração da Instabilidade:* %s", inc.Duration.Round(time.Second).String())
 			}
 		}
 	}
@@ -81,6 +91,9 @@ func BuildTelegramPortMessage(m models.Monitor, res models.CheckResult, inc *mod
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
 		statusText = "FALHA DE CONEXÃO"
+	} else if res.Status == models.StatusDegraded {
+		emoji = "🟡"
+		statusText = "CONEXÃO LENTA"
 	} else {
 		emoji = "🟢"
 		statusText = "CONECTADO"
@@ -100,10 +113,17 @@ func BuildTelegramPortMessage(m models.Monitor, res models.CheckResult, inc *mod
 
 		if res.Status == models.StatusDown {
 			body += fmt.Sprintf("\n🕒 *Começou em:* %s", inc.StartedAt.Format(timeLayout))
+		} else if res.Status == models.StatusDegraded {
+			body += fmt.Sprintf("\n🕒 *Início da Lentidão:* %s", inc.StartedAt.Format(timeLayout))
 		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDown {
 			if inc.ResolvedAt != nil {
 				body += fmt.Sprintf("\n🕒 *Resolvido em:* %s", inc.ResolvedAt.Format(timeLayout))
 			}
+			if inc.Duration != nil {
+				body += fmt.Sprintf("\n⏱ *Duração:* %s", inc.Duration.Round(time.Second).String())
+			}
+		} else if res.Status == models.StatusUp && m.LastCheckStatus == models.StatusDegraded {
+			body += "\n✅ *Latência Normalizada*"
 			if inc.Duration != nil {
 				body += fmt.Sprintf("\n⏱ *Duração:* %s", inc.Duration.Round(time.Second).String())
 			}

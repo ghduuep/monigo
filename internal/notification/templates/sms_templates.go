@@ -13,6 +13,9 @@ func BuildSMSHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.I
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
 		statusText = "DOWN"
+	} else if res.Status == models.StatusDegraded {
+		emoji = "🟡"
+		statusText = "SLOW"
 	} else {
 		emoji = "🟢"
 		statusText = "UP"
@@ -22,11 +25,18 @@ func BuildSMSHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.I
 
 	if res.Status == models.StatusDown {
 		msg += fmt.Sprintf(" %s", res.Message)
+	} else if res.Status == models.StatusDegraded {
+		msg += fmt.Sprintf(" %s", res.Message)
 	} else {
 		msg += fmt.Sprintf(" %dms.", res.Latency)
 
-		if inc != nil && m.LastCheckStatus == models.StatusDown && inc.Duration != nil {
-			msg += fmt.Sprintf(" Down for: %s", inc.Duration.Round(time.Second).String())
+		if inc != nil {
+			if m.LastCheckStatus == models.StatusDown && inc.Duration != nil {
+				msg += fmt.Sprintf(" Down for: %s", inc.Duration.Round(time.Second).String())
+			}
+			if m.LastCheckStatus == models.StatusDegraded && inc.Duration != nil {
+				msg += fmt.Sprintf(" Slow for: %s", inc.Duration.Round(time.Second).String())
+			}
 		}
 	}
 
@@ -51,6 +61,9 @@ func BuildSMSPortMessage(m models.Monitor, res models.CheckResult, inc *models.I
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
 		statusText = "FAIL"
+	} else if res.Status == models.StatusDegraded {
+		emoji = "🟡"
+		statusText = "SLOW"
 	} else {
 		emoji = "🟢"
 		statusText = "OK"
@@ -60,10 +73,17 @@ func BuildSMSPortMessage(m models.Monitor, res models.CheckResult, inc *models.I
 
 	if res.Status == models.StatusDown {
 		msg += fmt.Sprintf(" %s", res.Message)
+	} else if res.Status == models.StatusDegraded {
+		msg += fmt.Sprintf(" %s", res.Message)
 	} else {
 		msg += fmt.Sprintf(" %dms.", res.Latency)
-		if inc != nil && m.LastCheckStatus == models.StatusDown && inc.Duration != nil {
-			msg += fmt.Sprintf(" Down for: %s", inc.Duration.Round(time.Second).String())
+		if inc != nil {
+			if m.LastCheckStatus == models.StatusDown && inc.Duration != nil {
+				msg += fmt.Sprintf(" Down for: %s", inc.Duration.Round(time.Second).String())
+			}
+			if m.LastCheckStatus == models.StatusDegraded && inc.Duration != nil {
+				msg += fmt.Sprintf(" Slow for: %s", inc.Duration.Round(time.Second).String())
+			}
 		}
 	}
 
