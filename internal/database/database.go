@@ -95,9 +95,8 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		message TEXT,
 		status_code INTEGER,
 		latency_ms INTEGER,
-		checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown'))
-	);
+		checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
 	`
 	if _, err := pool.Exec(ctx, queryTimescaleBase); err != nil {
 		return err
