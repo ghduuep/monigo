@@ -128,7 +128,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 
 	queryView := `
 	CREATE MATERIALIZED VIEW IF NOT EXISTS monitor_stats_hourly
-	WITH (timescaledb.continuous) AS
+	WITH (timescaledb.continuous, timescaledb.materialized_only = false) AS 
 	SELECT
 		time_bucket('1 hour', checked_at) as bucket,
 		monitor_id,
