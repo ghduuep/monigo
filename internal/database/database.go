@@ -120,7 +120,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 	);
 
 	SELECT add_compression_policy('check_results', INTERVAL '3 days', if_not_exists => TRUE);
-	SELECT add_retention_policy('check_results', INTERVAL '6 months', if_not_exists => TRUE);
+	SELECT add_retention_policy('check_results', INTERVAL '1 year', if_not_exists => TRUE);
 	`
 	if _, err := pool.Exec(ctx, queryCompression); err != nil {
 		return err

@@ -167,6 +167,12 @@ func parseDataParams(c echo.Context) (time.Time, time.Time, error) {
 		}
 	}
 
+	retentionLimit := time.Now().AddDate(-1, 0, 0)
+
+	if from.Before(retentionLimit) {
+		return time.Time{}, time.Time{}, fmt.Errorf("data requested exceeds the 1 year retention policy")
+	}
+
 	return from, to, nil
 }
 
@@ -195,6 +201,9 @@ func (h *Handler) GetMonitorStats(c echo.Context) error {
 
 	from, to, err := parseDataParams(c)
 	if err != nil {
+		if err.Error() == "data requested exceeds the 1 year retention policy" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Cannot query data older than 1 year."})
+		}
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters"})
 	}
 
@@ -231,6 +240,9 @@ func (h *Handler) GetMonitorLastChecks(c echo.Context) error {
 
 	from, to, err := parseDataParams(c)
 	if err != nil {
+		if err.Error() == "data requested exceeds the 1 year retention policy" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Cannot query data older than 1 year."})
+		}
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
@@ -258,6 +270,9 @@ func (h *Handler) GetMonitorLastIncidents(c echo.Context) error {
 
 	from, to, err := parseDataParams(c)
 	if err != nil {
+		if err.Error() == "data requested exceeds the 1 year retention policy" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Cannot query data older than 1 year."})
+		}
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
@@ -292,6 +307,9 @@ func (h *Handler) ExportMonitorCSV(c echo.Context) error {
 
 	from, to, err := parseDataParams(c)
 	if err != nil {
+		if err.Error() == "data requested exceeds the 1 year retention policy" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Cannot query data older than 1 year."})
+		}
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 

@@ -35,6 +35,9 @@ func (h *Handler) GetIncidents(c echo.Context) error {
 
 	from, to, err := parseDataParams(c)
 	if err != nil {
+		if err.Error() == "data requested exceeds the 1 year retention policy" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Cannot query data older than 1 year."})
+		}
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
@@ -59,6 +62,9 @@ func (h *Handler) ExportIncidentsCSV(c echo.Context) error {
 
 	from, to, err := parseDataParams(c)
 	if err != nil {
+		if err.Error() == "data requested exceeds the 1 year retention policy" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Cannot query data older than 1 year."})
+		}
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
