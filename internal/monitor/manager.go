@@ -164,7 +164,7 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 		}
 
 		if incident != nil {
-			channels, _ := database.GetUserChannels(ctx, db, m.UserID)
+			channels, _ := database.GetEnabledUserChannels(ctx, db, m.UserID)
 			go dispatcher.SendAlert(channels, *m, result, incident)
 		}
 

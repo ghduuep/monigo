@@ -69,5 +69,5 @@ func SetupRotes(e *echo.Echo, db *pgxpool.Pool, rdb *redis.Client) {
 	protected.DELETE("/users", handler.DeleteUser)
 	protected.PATCH("/users", handler.UpdateUser)
 	protected.PATCH("/monitors/:id", handler.UpdateMonitor)
-
+	protected.PATCH("/channels/:id", handler.UpdateChannel)
 }

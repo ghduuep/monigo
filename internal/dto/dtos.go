@@ -57,3 +57,9 @@ type UpdateMonitorRequest struct {
 	Timeout  *string         `json:"timeout" validate:"omitempty,oneof=1s 30s 45s 60s"`
 	Config   json.RawMessage `json:"config" validate:"omitempty"`
 }
+
+type UpdateChannelRequest struct {
+	Type    *string `json:"type" validate:"omitempty,oneof=email telegram sms"`
+	Target  *string `json:"target" validate:"omitempty"`
+	Enabled *bool   `json:"enabled" validate:"omitempty"`
+}

@@ -78,7 +78,7 @@ func UpdateUser(ctx context.Context, db *pgxpool.Pool, userID int, data dto.Upda
 }
 
 func GetUserChannels(ctx context.Context, db *pgxpool.Pool, userID int) ([]models.NotificationChannel, error) {
-	query := `SELECT id, user_id, type, target, enabled FROM user_channels WHERE user_id = $1 AND enabled = true`
+	query := `SELECT id, user_id, type, target, enabled FROM user_channels WHERE user_id = $1`
 
 	rows, err := db.Query(ctx, query, userID)
 	if err != nil {
@@ -107,6 +107,66 @@ func DeleteChannel(ctx context.Context, db *pgxpool.Pool, channelID int, userID 
 	_, err := db.Exec(ctx, query, channelID, userID)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func GetEnabledUserChannels(ctx context.Context, db *pgxpool.Pool, userID int) ([]models.NotificationChannel, error) {
+	query := `SELECT id, user_id, type, target, enabled FROM user_channels WHERE user_id = $1 AND enabled = true`
+
+	rows, err := db.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	channels, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.NotificationChannel])
+	if err != nil {
+		return nil, err
+	}
+
+	return channels, nil
+}
+
+func UpdateChannel(ctx context.Context, db *pgxpool.Pool, channelID, userID int, req dto.UpdateChannelRequest) error {
+	var setParts []string
+	var args []any
+	argID := 1
+
+	if req.Type != nil {
+		setParts = append(setParts, fmt.Sprintf("type = $%d", argID))
+		args = append(args, *req.Type)
+		argID++
+	}
+
+	if req.Target != nil {
+		setParts = append(setParts, fmt.Sprintf("target = $%d", argID))
+		args = append(args, *req.Target)
+		argID++
+	}
+
+	if req.Enabled != nil {
+		setParts = append(setParts, fmt.Sprintf("enabled = $%d", argID))
+		args = append(args, *req.Enabled)
+		argID++
+	}
+
+	if len(setParts) == 0 {
+		return nil
+	}
+
+	query := fmt.Sprintf("UPDATE user_channels SET %s WHERE id = $%d AND user_id = $%d", strings.Join(setParts, ", "), argID, argID+1)
+
+	args = append(args, channelID, userID)
+
+	tag, err := db.Exec(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("channel not found")
 	}
 
 	return nil

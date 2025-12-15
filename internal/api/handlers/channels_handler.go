@@ -100,3 +100,40 @@ func (h *Handler) DeleteChannel(c echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
+
+// @Summary Update channel
+// @Description Update channel details (type, target or enabled status)
+// @Tags channels
+// @Security BearerAuth
+// @Param id path int true "Channel ID"
+// @Param request body dto.UpdateChannelRequest true "Update Info"
+// @Success 204
+// @Router /channels/{id} [patch]
+func (h *Handler) UpdateChannel(c echo.Context) error {
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid ID."})
+	}
+
+	var req dto.UpdateChannelRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid data."})
+	}
+
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	userID := getUserIdFromToken(c)
+
+	if err := database.UpdateChannel(c.Request().Context(), h.DB, id, userID, req); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update channel."})
+	}
+
+	// Invalida cache
+	cacheKey := fmt.Sprintf("user:%d:channels", userID)
+	h.invalidateCache(c.Request().Context(), cacheKey)
+
+	return c.NoContent(http.StatusOK)
+}
