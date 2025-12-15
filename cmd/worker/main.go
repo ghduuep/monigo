@@ -18,8 +18,8 @@ func main() {
 	}
 
 	emailService := notification.NewEmailService(
-		os.Getenv("RESEND_API_KEY")
-		os.Getenv("EMAIL_SENDER")
+		os.Getenv("RESEND_API_KEY"),
+		os.Getenv("EMAIL_SENDER"),
 	)
 
 	telegramService := notification.NewTelegramService(
