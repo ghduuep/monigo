@@ -41,23 +41,25 @@ const (
 type MonitorStatus string
 
 const (
-	StatusUp      MonitorStatus = "up"
-	StatusDown    MonitorStatus = "down"
-	StatusUnknown MonitorStatus = "unknown"
+	StatusUp       MonitorStatus = "up"
+	StatusDown     MonitorStatus = "down"
+	StatusUnknown  MonitorStatus = "unknown"
+	StatusDegraded MonitorStatus = "degraded"
 )
 
 type Monitor struct {
-	ID              int             `json:"id" db:"id"`
-	UserID          int             `json:"user_id" db:"user_id"`
-	Target          string          `json:"target" db:"target"`
-	Type            MonitorType     `json:"type" db:"type"`
-	Config          json.RawMessage `json:"config" db:"config" swaggertype:"string"`
-	Interval        time.Duration   `json:"interval" db:"interval" swaggertype:"integer"`
-	Timeout         time.Duration   `json:"timeout" db:"timeout" swaggertype:"integer"`
-	LastCheckStatus MonitorStatus   `json:"last_check_status" db:"last_check_status"`
-	LastCheckAt     *time.Time      `json:"last_check_at" db:"last_check_at"`
-	StatusChangedAt *time.Time      `json:"status_changed_at" db:"status_changed_at"`
-	CreatedAt       time.Time       `json:"created_at" db:"created_at"`
+	ID               int             `json:"id" db:"id"`
+	UserID           int             `json:"user_id" db:"user_id"`
+	Target           string          `json:"target" db:"target"`
+	Type             MonitorType     `json:"type" db:"type"`
+	Config           json.RawMessage `json:"config" db:"config" swaggertype:"string"`
+	Interval         time.Duration   `json:"interval" db:"interval" swaggertype:"integer"`
+	Timeout          time.Duration   `json:"timeout" db:"timeout" swaggertype:"integer"`
+	LatencyThreshold time.Duration   `json:"latency_threshold" db:"latency_threshold"`
+	LastCheckStatus  MonitorStatus   `json:"last_check_status" db:"last_check_status"`
+	LastCheckAt      *time.Time      `json:"last_check_at" db:"last_check_at"`
+	StatusChangedAt  *time.Time      `json:"status_changed_at" db:"status_changed_at"`
+	CreatedAt        time.Time       `json:"created_at" db:"created_at"`
 }
 
 type CheckResult struct {

@@ -3,12 +3,14 @@ package monitor
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"log"
+	"time"
+
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/notification"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"log"
-	"time"
 )
 
 type activeMonitor struct {
@@ -140,19 +142,28 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 		log.Printf("[ERROR] failed to save check result for monitor %d: %v", m.ID, err)
 	}
 
+	if result.Status == models.StatusUp && m.LatencyThreshold > 0 && result.Latency > int64(m.LatencyThreshold) {
+		log.Printf("[LOG] Latency threshold achieved for monitor %d", m.ID)
+		result.Status = models.StatusDegraded
+		result.Message = fmt.Sprintf("Low performance detected: %d Limit: %d", result.Latency, m.LatencyThreshold)
+	}
+
 	if result.Status != m.LastCheckStatus && result.Status != models.StatusUnknown {
 		log.Printf("[LOG] Monitor %d has changed from %s to %s", m.ID, m.LastCheckStatus, result.Status)
 		var incident *models.Incident
 		var dbErr error
 
-		if result.Status == models.StatusDown {
+		if result.Status == models.StatusDown || result.Status == models.StatusDegraded {
 			incident, dbErr = database.CreateIncident(ctx, db, m.ID, result.Message)
 			if dbErr != nil {
 				log.Printf("[ERROR] Failed to create incident: %v", dbErr)
 			}
 		}
 
-		if m.StatusChangedAt != nil && m.LastCheckStatus == models.StatusDown && result.Status == models.StatusUp {
+		isRecovered := result.Status == models.StatusUp
+		wasBad := m.LastCheckStatus == models.StatusDown || m.LastCheckStatus == models.StatusDegraded
+
+		if m.StatusChangedAt != nil && wasBad && isRecovered {
 			incident, dbErr = database.ResolveIncident(ctx, db, m.ID)
 			if dbErr != nil {
 				log.Printf("[ERROR] Failed to resolve incident: %v", dbErr)

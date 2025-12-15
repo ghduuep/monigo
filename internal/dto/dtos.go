@@ -25,11 +25,12 @@ type LoginRequest struct {
 }
 
 type MonitorRequest struct {
-	Target   string             `json:"target" db:"target" validate:"required"`
-	Type     models.MonitorType `json:"type" db:"type" validate:"required,oneof=http dns port"`
-	Config   json.RawMessage    `json:"config" db:"config" swaggertype:"string"`
-	Interval string             `json:"interval" validate:"required,oneof=30s 1m 5m 30m 1h 12h 24h"`
-	Timeout  string             `json:"timeout" validate:"required,oneof=1s 15s 30s 45s 60s"`
+	Target           string             `json:"target" db:"target" validate:"required"`
+	Type             models.MonitorType `json:"type" db:"type" validate:"required,oneof=http dns port"`
+	Config           json.RawMessage    `json:"config" db:"config" swaggertype:"string"`
+	Interval         string             `json:"interval" validate:"required,oneof=30s 1m 5m 30m 1h 12h 24h"`
+	Timeout          string             `json:"timeout" validate:"required,oneof=1s 15s 30s 45s 60s"`
+	LatencyThreshold time.Duration      `json:"latency_threshold" db:"latency_threshold"`
 }
 
 type MonitorStatsResponse struct {
@@ -52,10 +53,11 @@ type UpdateUserRequest struct {
 }
 
 type UpdateMonitorRequest struct {
-	Target   *string         `json:"target" validate:"omitempty"`
-	Interval *string         `json:"interval" validate:"omitempty,oneof=30s 1m 5m 30m 1h 12h 24h"`
-	Timeout  *string         `json:"timeout" validate:"omitempty,oneof=1s 30s 45s 60s"`
-	Config   json.RawMessage `json:"config" validate:"omitempty"`
+	Target           *string         `json:"target" validate:"omitempty"`
+	Interval         *string         `json:"interval" validate:"omitempty,oneof=30s 1m 5m 30m 1h 12h 24h"`
+	Timeout          *string         `json:"timeout" validate:"omitempty,oneof=1s 30s 45s 60s"`
+	Config           json.RawMessage `json:"config" validate:"omitempty"`
+	LatencyThreshold *time.Duration  `json:"latency_threshold" db:"latency_threshold"`
 }
 
 type UpdateChannelRequest struct {
