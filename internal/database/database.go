@@ -87,6 +87,9 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown'))
 	);
 
+	CREATE EXTENSION IF NOT EXISTS timescaledb;
+	SELECT create_hypertable('check_results', 'checked_at', if_not_exists => TRUE);
+
 	CREATE INDEX IF NOT EXISTS idx_check_results_monitor_date
 	ON check_results(monitor_id, checked_at DESC);
 
