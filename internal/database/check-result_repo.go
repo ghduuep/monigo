@@ -21,17 +21,17 @@ func CreateCheckResult(ctx context.Context, db *pgxpool.Pool, result *models.Che
 
 func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) (dto.MonitorStatsResponse, error) {
 	query := `SELECT
-				COUNT(id) as total_checks,
-				COALESCE(AVG(latency_ms), 0) as avg_latency,
-				COALESCE(MIN(latency_ms), 0) as min_latency, -- Pega a mínima
-				COALESCE(MAX(latency_ms), 0) as max_latency, -- Pega a máxima
+				COALESCE(SUM(total_checks), 0) as total_checks,
+				COALESCE(SUM(sum_latency) / NULLIF(SUM(total_checks), 0), 0) as avg_latency,
+				COALESCE(MIN(min_latency), 0) as min_latency,
+				COALESCE(MAX(max_latency), 0) as max_latency,
 				COALESCE(
-					(COUNT(id) FILTER (WHERE status = 'up') * 100.0 / NULLIF(COUNT(id), 0)),
+					(SUM(up_count) * 100.0 / NULLIF(SUM(total_checks), 0)),
 					0
 				) as uptime_percentage
-			FROM check_results
+			FROM monitor_stats_hourly
 			WHERE monitor_id = $1 
-			AND checked_at >= $2 AND checked_at <= $3`
+			AND bucket >= $2 AND bucket <= $3`
 
 	var stats dto.MonitorStatsResponse
 	stats.MonitorID = monitorID

@@ -45,7 +45,6 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		created_at TIMESTAMPTZ DEFAULT NOW()
 	);
 
-
 	CREATE TABLE IF NOT EXISTS user_channels (
 		id SERIAL PRIMARY KEY,
 		user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -53,7 +52,6 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		target VARCHAR(255) NOT NULL,
 		enabled BOOLEAN DEFAULT TRUE,
 		created_at TIMESTAMPTZ DEFAULT NOW(),
-
 		CONSTRAINT unique_channel_target UNIQUE (user_id, type, target)
 	);
 
@@ -69,13 +67,23 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		last_check_at TIMESTAMPTZ,
 		status_changed_at TIMESTAMPTZ,
 		created_at TIMESTAMPTZ DEFAULT NOW()
-
-		);
-
+	);
 	CREATE INDEX IF NOT EXISTS idx_monitors_user_id ON monitors(user_id);
 
+	CREATE TABLE IF NOT EXISTS incidents (
+		id SERIAL PRIMARY KEY,
+		monitor_id INTEGER REFERENCES monitors(id) ON DELETE CASCADE,
+		started_at TIMESTAMPTZ DEFAULT NOW(),
+		resolved_at TIMESTAMPTZ,
+		duration INTERVAL,
+		error_cause TEXT
+	);
+	CREATE INDEX IF NOT EXISTS idx_incidents_monitor_id ON incidents(monitor_id);
+
+	CREATE EXTENSION IF NOT EXISTS timescaledb;
+
 	CREATE TABLE IF NOT EXISTS check_results (
-		id SERIAL,
+		id BIGSERIAL, 
 		monitor_id INTEGER REFERENCES monitors(id) ON DELETE CASCADE,
 		status VARCHAR(10) NOT NULL,
 		result_value TEXT,
@@ -83,28 +91,41 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		status_code INTEGER,
 		latency_ms INTEGER,
 		checked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown')),
-
-		PRIMARY KEY (id, checked_at)
+		CONSTRAINT status_check CHECK (status IN ('up', 'down', 'unknown'))
 	);
 
-	CREATE EXTENSION IF NOT EXISTS timescaledb;
-	SELECT create_hypertable('check_results', 'checked_at', if_not_exists => TRUE);
+	SELECT create_hypertable('check_results', 'checked_at', chunk_time_interval => INTERVAL '1 day', if_not_exists => TRUE);
 
-	CREATE INDEX IF NOT EXISTS idx_check_results_monitor_date
-	ON check_results(monitor_id, checked_at DESC);
+	CREATE INDEX IF NOT EXISTS idx_check_results_monitor_date ON check_results(monitor_id, checked_at DESC);
 
-	CREATE TABLE IF NOT EXISTS incidents (
-    id SERIAL PRIMARY KEY,
-    monitor_id INTEGER REFERENCES monitors(id) ON DELETE CASCADE,
-    started_at TIMESTAMPTZ DEFAULT NOW(),
-    resolved_at TIMESTAMPTZ,
-    duration INTERVAL,
-    error_cause TEXT
+	ALTER TABLE check_results SET (
+		timescaledb.compress,
+		timescaledb.compress_segmentby = 'monitor_id',
+		timescaledb.compress_orderby = 'checked_at DESC'
 	);
 
-	CREATE INDEX IF NOT EXISTS idx_incidents_monitor_id ON incidents(monitor_id);
+	SELECT add_compression_policy('check_results', INTERVAL '3 days', if_not_exists => TRUE);
+
+	SELECT add_retention_policy('check_results', INTERVAL '12 months', if_not_exists => TRUE);
+
+	CREATE MATERIALIZED VIEW IF NOT EXISTS monitor_stats_hourly
+	WITH (timescaledb.continuous) AS
+	SELECT
+		time_bucket('1 hour', checked_at) as bucket,
+		monitor_id,
+		SUM(latency_ms) as sum_latency,
+		MIN(latency_ms) as min_latency,
+		MAX(latency_ms) as max_latency,
+		COUNT(*) FILTER (WHERE status = 'up') as up_count,
+		COUNT(*) as total_checks
+	FROM check_results
+	GROUP BY bucket, monitor_id;
+
+	SELECT add_continuous_aggregate_policy('monitor_stats_hourly',
+		start_offset => NULL,
+		end_offset => INTERVAL '1 hour',
+		schedule_interval => INTERVAL '30 minutes',
+		if_not_exists => TRUE);	
 	`
 	_, err := pool.Exec(ctx, query)
 	return err
