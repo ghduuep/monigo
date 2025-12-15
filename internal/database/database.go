@@ -63,7 +63,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		config JSONB DEFAULT '{}'::jsonb,
 		interval INTERVAL NOT NULL,
 		timeout INTERVAL NOT NULL DEFAULT INTERVAL '30 seconds',
-		latency_threshold_ms INTEGER,
+		latency_threshold_ms INTEGER DEFAULT 0,
 		last_check_status VARCHAR(10) DEFAULT 'unknown',
 		last_check_at TIMESTAMPTZ,
 		status_changed_at TIMESTAMPTZ,
