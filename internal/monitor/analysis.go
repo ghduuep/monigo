@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/models"
-	"log"
-	"time"
+	"github.com/redis/go-redis/v9"
 )
 
 func (m *MonitorManager) isConfirmedFailure(ctx context.Context, mon *models.Monitor, currentStatus models.MonitorStatus) bool {
@@ -77,5 +80,64 @@ func (m *MonitorManager) analyzePerformance(ctx context.Context, mon *models.Mon
 			res.Status = models.StatusDegraded
 			res.Message = msg
 		}
+	}
+}
+
+func (m *MonitorManager) handleSSLAlerts(ctx context.Context, mon *models.Monitor, res *models.CheckResult) {
+	if mon.Type != models.TypeHTTP || res.ResultValue == "" {
+		return
+	}
+
+	var config models.HTTPConfig
+	if err := json.Unmarshal(mon.Config, &config); err != nil || !config.CheckSSL {
+		return
+	}
+
+	daysRemaining, err := strconv.Atoi(res.ResultValue)
+	if err != nil {
+		return
+	}
+
+	redisKey := fmt.Sprintf("monitor:%d:ssl_last_threshold", mon.ID)
+
+	if daysRemaining > 30 {
+		m.redis.Del(ctx, redisKey)
+		return
+	}
+
+	lastThresholdStr, err := m.redis.Get(ctx, redisKey).Result()
+	lastThreshold := 0
+	if err == nil {
+		lastThreshold, _ = strconv.Atoi(lastThresholdStr)
+	} else if err != redis.Nil {
+		log.Printf("[ERROR] Redis error on SSL check: %v", err)
+		return
+	}
+
+	thresholds := []int{30, 14, 7}
+	shouldAlert := false
+	currentMatchedThreshold := 0
+
+	for _, t := range thresholds {
+		if daysRemaining <= t {
+			if lastThreshold == 0 || lastThreshold > t {
+				shouldAlert = true
+				currentMatchedThreshold = t
+				break
+			}
+		}
+	}
+
+	if shouldAlert {
+		log.Printf("[INFO] Sending SSL periodic alert for monitor %d (Days: %d, Threshold: %d)", mon.ID, daysRemaining, currentMatchedThreshold)
+
+		err := m.redis.Set(ctx, redisKey, currentMatchedThreshold, 60*24*time.Hour).Err()
+		if err != nil {
+			log.Printf("[ERROR] Failed to update redis key: %v", err)
+		}
+
+		channels, _ := database.GetEnabledUserChannels(ctx, m.db, mon.UserID)
+
+		go m.dispatcher.SendAlert(channels, *mon, *res, nil)
 	}
 }

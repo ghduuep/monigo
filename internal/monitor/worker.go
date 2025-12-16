@@ -54,6 +54,8 @@ func (m *MonitorManager) processCheck(ctx context.Context, mon *models.Monitor) 
 
 	m.handleDNSLearning(ctx, mon, &result)
 
+	m.handleSSLAlerts(ctx, mon, &result)
+
 	shouldProceed := m.isConfirmedFailure(ctx, mon, result.Status)
 	if !shouldProceed {
 		_ = database.UpdateLastCheck(ctx, m.db, mon.ID)

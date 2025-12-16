@@ -78,6 +78,10 @@ type DNSConfig struct {
 	ExpectedValue string `json:"expected_value"`
 }
 
+type HTTPConfig struct {
+	CheckSSL bool `json:"check_ssl"`
+}
+
 type Incident struct {
 	ID         int            `json:"id" db:"id"`
 	MonitorID  int            `json:"monitor_id" db:"monitor_id"`
