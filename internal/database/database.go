@@ -135,7 +135,7 @@ func createTables(ctx context.Context, pool *pgxpool.Pool) error {
 		SUM(latency_ms) as sum_latency,
 		MIN(latency_ms) as min_latency,
 		MAX(latency_ms) as max_latency,
-		COUNT(*) FILTER (WHERE status = 'up', 'degraded') as up_count,
+		COUNT(*) FILTER (WHERE status IN ('up', 'degraded')) as up_count,
 		COUNT(*) as total_checks
 	FROM check_results
 	GROUP BY bucket, monitor_id;
