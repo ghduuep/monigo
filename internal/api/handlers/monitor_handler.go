@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
-	"log"
-	"math"
-	"net/http"
-	"strconv"
-	"time"
-
 	"github.com/ghduuep/pingly/internal/database"
 	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/labstack/echo/v4"
+	"math"
+	"net/http"
+	"strconv"
+	"time"
 )
 
 // @Summary Get all monitors
