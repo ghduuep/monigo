@@ -28,7 +28,7 @@ func checkDNS(m models.Monitor) models.CheckResult {
 		},
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), m.Timeout)
 	defer cancel()
 
 	var resultString string
