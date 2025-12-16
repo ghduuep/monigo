@@ -355,7 +355,7 @@ func (h *Handler) ExportMonitorCSV(c echo.Context) error {
 
 	filename := fmt.Sprintf("monitor_%d_export_%s.csv", id, time.Now().Format("20060102_150405"))
 	c.Response().Header().Set(echo.HeaderContentType, "text/csv")
-	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename"+filename)
+	c.Response().Header().Set(echo.HeaderContentDisposition, "attachment; filename="+filename)
 	c.Response().WriteHeader(http.StatusOK)
 
 	rows, err := database.ExportCheckResults(c.Request().Context(), h.DB, id, from, to)
