@@ -22,10 +22,10 @@ func (m *MonitorManager) startMonitor(ctx context.Context, mon models.Monitor) {
 
 func (m *MonitorManager) runWorker(ctx context.Context, mon models.Monitor) {
 	log.Printf("[INFO] Perfoming initial check for monitor %d", mon.ID)
-	initialStatus := m.processCheck(ctx, &mon)
+	initialStatus, useFastInterval := m.processCheck(ctx, &mon)
 
 	initialDelay := mon.Interval
-	if initialStatus == models.StatusDown || initialStatus == models.StatusDegraded {
+	if useFastInterval || initialStatus == models.StatusDown || initialStatus == models.StatusDegraded {
 		initialDelay = DownCheckInterval
 	}
 
@@ -37,10 +37,10 @@ func (m *MonitorManager) runWorker(ctx context.Context, mon models.Monitor) {
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			status := m.processCheck(ctx, &mon)
+			_, useFastInterval := m.processCheck(ctx, &mon)
 
 			nextInterval := mon.Interval
-			if status == models.StatusDown || status == models.StatusDegraded {
+			if useFastInterval {
 				nextInterval = DownCheckInterval
 			}
 
@@ -49,7 +49,7 @@ func (m *MonitorManager) runWorker(ctx context.Context, mon models.Monitor) {
 	}
 }
 
-func (m *MonitorManager) processCheck(ctx context.Context, mon *models.Monitor) models.MonitorStatus {
+func (m *MonitorManager) processCheck(ctx context.Context, mon *models.Monitor) (models.MonitorStatus, bool) {
 	result := performCheck(*mon)
 
 	m.handleDNSLearning(ctx, mon, &result)
@@ -59,7 +59,7 @@ func (m *MonitorManager) processCheck(ctx context.Context, mon *models.Monitor) 
 	shouldProceed := m.isConfirmedFailure(ctx, mon, result.Status)
 	if !shouldProceed {
 		_ = database.UpdateLastCheck(ctx, m.db, mon.ID)
-		return mon.LastCheckStatus
+		return mon.LastCheckStatus, true
 	}
 
 	m.analyzePerformance(ctx, mon, &result)
@@ -74,7 +74,9 @@ func (m *MonitorManager) processCheck(ctx context.Context, mon *models.Monitor) 
 		_ = database.UpdateLastCheck(ctx, m.db, mon.ID)
 	}
 
-	return result.Status
+	isDownOrDegraded := result.Status == models.StatusDown || result.Status == models.StatusDegraded
+
+	return result.Status, isDownOrDegraded
 }
 
 func performCheck(m models.Monitor) models.CheckResult {
