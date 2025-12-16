@@ -45,7 +45,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go monitor.StartMonitoring(ctx, db, rdb, *dispatcher)
+	monManager := monitor.NewMonitorManager(db, rdb, *dispatcher)
+
+	go monManager.Start(ctx)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
