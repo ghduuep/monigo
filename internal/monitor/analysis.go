@@ -60,7 +60,7 @@ func (m *MonitorManager) handleDNSLearning(ctx context.Context, mon *models.Moni
 	}
 }
 
-func (m *MonitorManager) analyzePerformance(ctx context.Context, mon *models.Monitor, res *models.CheckResult) {
+func (m *MonitorManager) analyzePerformance(mon *models.Monitor, res *models.CheckResult) {
 	if res.Status != models.StatusUp {
 		return
 	}
@@ -70,16 +70,6 @@ func (m *MonitorManager) analyzePerformance(ctx context.Context, mon *models.Mon
 		res.Status = models.StatusDegraded
 		res.Message = fmt.Sprintf("Low performance: %dms (Limit: %dms)", res.Latency, mon.LatencyThreshold)
 		return
-	}
-
-	history, err := database.GetRecentLatencies(ctx, m.db, mon.ID, 360)
-	if err == nil {
-		isAnom, msg := isAnomaly(res.Latency, history)
-		if isAnom {
-			log.Printf("[INFO] Anomaly detected for monitor %d", mon.ID)
-			res.Status = models.StatusDegraded
-			res.Message = msg
-		}
 	}
 }
 

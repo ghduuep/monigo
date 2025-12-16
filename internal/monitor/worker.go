@@ -62,7 +62,7 @@ func (m *MonitorManager) processCheck(ctx context.Context, mon *models.Monitor) 
 		return mon.LastCheckStatus, true
 	}
 
-	m.analyzePerformance(ctx, mon, &result)
+	m.analyzePerformance(mon, &result)
 
 	if err := database.CreateCheckResult(ctx, m.db, &result); err != nil {
 		log.Printf("[ERROR] Failed to save check result for monitor %d", mon.ID)
