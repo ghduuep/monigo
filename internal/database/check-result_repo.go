@@ -99,3 +99,28 @@ func ExportCheckResults(ctx context.Context, db *pgxpool.Pool, monitorID int, fr
 
 	return db.Query(ctx, query, monitorID, from, to)
 }
+
+func GetRecentLatencies(ctx context.Context, db *pgxpool.Pool, monitorID int, limit int) ([]int64, error) {
+	query := `
+		SELECT latency_ms from check_results WHERE monitor_id = $1 AND status = 'up'
+		ORDER BY checked_at DESC
+		LIMIT $2
+	`
+
+	rows, err := db.Query(ctx, query, monitorID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var latencies []int64
+	for rows.Next() {
+		var l int64
+		if err := rows.Scan(&l); err != nil {
+			continue
+		}
+		latencies = append(latencies, l)
+	}
+
+	return latencies, nil
+}

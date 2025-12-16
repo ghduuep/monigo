@@ -144,6 +144,20 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 		result.Message = fmt.Sprintf("Low performance detected: %d Limit: %d", result.Latency, m.LatencyThreshold)
 	}
 
+	if result.Status == models.StatusUp {
+		history, err := database.GetRecentLatencies(ctx, db, m.ID, 30)
+		if err == nil {
+			isAnom, msg := isAnomaly(result.Latency, history)
+			if isAnom {
+				log.Printf("[INFO] Anomaly detected for monitor %d", m.ID)
+				result.Status = models.StatusDegraded
+				result.Message = msg
+			}
+		} else {
+			log.Printf("[ERROR] Failed to fetch history for AIOps: %v", err)
+		}
+	}
+
 	if err := database.CreateCheckResult(ctx, db, &result); err != nil {
 		log.Printf("[ERROR] failed to save check result for monitor %d: %v", m.ID, err)
 	}
