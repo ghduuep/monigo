@@ -48,7 +48,13 @@ func ResolveIncident(ctx context.Context, db *pgxpool.Pool, monitorID int) (*mod
 }
 
 func GetIncidentsByMonitorID(ctx context.Context, db *pgxpool.Pool, monitorID, limit, offset int, from, to time.Time) ([]*models.Incident, int64, error) {
-	query := `SELECT * from incidents WHERE monitor_id = $1 AND started_at >= $2 AND started_at <= $3 ORDER BY started_at DESC LIMIT $4 OFFSET $5`
+	query := `
+		SELECT id, monitor_id, started_at, resolved_at, duration, error_cause, COUNT(*) OVER() as total 
+        FROM incidents 
+        WHERE monitor_id = $1 AND started_at >= $2 AND started_at <= $3 
+        ORDER BY started_at DESC 
+        LIMIT $4 OFFSET $5
+	`
 
 	rows, err := db.Query(ctx, query, monitorID, from, to, limit, offset)
 	if err != nil {
