@@ -12,19 +12,36 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID int) ([]*models.Monitor, error) {
-	query := `SELECT id, user_id, target, type, config, interval, timeout, latency_threshold_ms, last_check_status, last_check_at, status_changed_at, created_at FROM monitors WHERE user_id = $1`
-	rows, err := db.Query(ctx, query, userID)
+func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int) ([]*models.Monitor, int64, error) {
+	query := `
+	SELECT id, user_id, target, type, config, interval, timeout, latency_threshold_ms, last_check_status, last_check_at, status_changed_at, created_at, COUNT(*) OVER() as total 
+	FROM monitors 
+	WHERE user_id = $1
+	ORDER BY created_at DESC
+	LIMIT $2 OFFSET $3
+	`
+	rows, err := db.Query(ctx, query, userID, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
-	monitors, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.Monitor])
-	if err != nil {
-		return nil, err
+	var monitors []*models.Monitor
+	var total int64
+
+	for rows.Next() {
+		var m models.Monitor
+
+		err := rows.Scan(
+			&m.ID, &m.UserID, &m.Target, &m.Type, &m.Config, &m.Interval, &m.Timeout, &m.LatencyThreshold, &m.LastCheckStatus, &m.LastCheckAt, &m.StatusChangedAt, &m.CreatedAt, &total,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		monitors = append(monitors, &m)
 	}
-	return monitors, nil
+
+	return monitors, total, nil
 }
 
 func GetAllMonitors(ctx context.Context, db *pgxpool.Pool) ([]*models.Monitor, error) {

@@ -66,3 +66,20 @@ type UpdateChannelRequest struct {
 	Target  *string `json:"target" validate:"omitempty"`
 	Enabled *bool   `json:"enabled" validate:"omitempty"`
 }
+
+type PaginationQuery struct {
+	Page  int `json:"page"`
+	Limit int `json:"limit"`
+}
+
+type Meta struct {
+	CurrentPage int   `json:"current_page"`
+	Perpage     int   `json:"per_page"`
+	Total       int64 `json:"total"`
+	LastPage    int   `json:"last_page"`
+}
+
+type PaginatedResponse struct {
+	Data any  `json:"data"`
+	Meta Meta `json:"meta"`
+}

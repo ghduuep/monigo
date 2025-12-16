@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,12 +26,30 @@ import (
 // @Router /monitors [get]
 func (h *Handler) GetMonitors(c echo.Context) error {
 	userID := getUserIdFromToken(c)
-	monitors, err := database.GetMonitorsByUserID(c.Request().Context(), h.DB, userID)
+
+	page, limit, offset := getPaginationParams(c)
+
+	monitors, total, err := database.GetMonitorsByUserID(c.Request().Context(), h.DB, userID, limit, offset)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get monitors."})
 	}
 
-	return c.JSON(http.StatusOK, monitors)
+	if monitors == nil {
+		monitors = []*models.Monitor{}
+	}
+
+	lastPage := int(math.Ceil(float64(total) / float64(limit)))
+	response := dto.PaginatedResponse{
+		Data: monitors,
+		Meta: dto.Meta{
+			CurrentPage: page,
+			Perpage:     limit,
+			Total:       total,
+			LastPage:    lastPage,
+		},
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
 
 // @Summary Get monitor by ID
@@ -239,6 +258,8 @@ func (h *Handler) GetMonitorLastChecks(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 
+	page, limit, offset := getPaginationParams(c)
+
 	from, to, err := parseDataParams(c)
 	if err != nil {
 		if err.Error() == "data requested exceeds the 1 year retention policy" {
@@ -247,12 +268,27 @@ func (h *Handler) GetMonitorLastChecks(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
-	checks, err := database.GetLastChecks(c.Request().Context(), h.DB, id, from, to)
+	checks, total, err := database.GetLastChecks(c.Request().Context(), h.DB, id, limit, offset, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get checks."})
 	}
 
-	return c.JSON(http.StatusOK, checks)
+	if checks == nil {
+		checks = []*models.CheckResult{}
+	}
+
+	lastPage := int(math.Ceil(float64(total) / float64(limit)))
+	response := dto.PaginatedResponse{
+		Data: checks,
+		Meta: dto.Meta{
+			CurrentPage: page,
+			Perpage:     limit,
+			Total:       total,
+			LastPage:    lastPage,
+		},
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
 
 func (h *Handler) GetMonitorLastIncidents(c echo.Context) error {

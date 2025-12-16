@@ -3,10 +3,12 @@ package handlers
 import (
 	"encoding/csv"
 	"fmt"
+	"math"
 	"net/http"
 	"time"
 
 	"github.com/ghduuep/pingly/internal/database"
+	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/labstack/echo/v4"
 )
@@ -21,12 +23,13 @@ import (
 // @Router /incidents [get]
 func (h *Handler) GetIncidents(c echo.Context) error {
 	userID := getUserIdFromToken(c)
+	page, limit, offset := getPaginationParams(c)
 
 	qStart := c.QueryParam("start_date")
 	qEnd := c.QueryParam("end_date")
 	qPeriod := c.QueryParam("period")
 
-	cacheKey := fmt.Sprintf("user:%d:incidents:%s:%s:%s", userID, qStart, qEnd, qPeriod)
+	cacheKey := fmt.Sprintf("user:%d:incidents:%s:%s:%s:%d:%d", userID, qStart, qEnd, qPeriod, page, limit)
 
 	var incidents []*models.Incident
 	if h.getCache(c.Request().Context(), cacheKey, &incidents) {
@@ -41,14 +44,29 @@ func (h *Handler) GetIncidents(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
-	incidents, err = database.GetIncidentsByUserID(c.Request().Context(), h.DB, userID, from, to)
+	incidents, total, err := database.GetIncidentsByUserID(c.Request().Context(), h.DB, userID, limit, offset, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get incidents."})
 	}
 
+	if incidents == nil {
+		incidents = []*models.Incident{}
+	}
+
+	lastPage := int(math.Ceil(float64(total) / float64(limit)))
+	response := dto.PaginatedResponse{
+		Data: incidents,
+		Meta: dto.Meta{
+			CurrentPage: page,
+			Perpage:     limit,
+			Total:       total,
+			LastPage:    lastPage,
+		},
+	}
+
 	go h.setCache(c.Request().Context(), cacheKey, incidents, 30*time.Second)
 
-	return c.JSON(http.StatusOK, incidents)
+	return c.JSON(http.StatusOK, response)
 }
 
 // @Summary Export incidents to CSV

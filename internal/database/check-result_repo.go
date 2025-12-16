@@ -69,26 +69,38 @@ func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int, thres
 	return stats, nil
 }
 
-func GetLastChecks(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) ([]*models.CheckResult, error) {
-	query := `SELECT id, monitor_id, status, result_value, message, status_code, latency_ms, checked_at
+func GetLastChecks(ctx context.Context, db *pgxpool.Pool, monitorID, limit, offset int, from, to time.Time) ([]*models.CheckResult, int64, error) {
+	query := `
+	SELECT id, monitor_id, status, result_value, message, status_code, latency_ms, checked_at, COUNT(*) OVER() as total
 	FROM check_results
 	WHERE monitor_id = $1
 	AND checked_at >= $2 AND checked_at <= $3
 	ORDER BY checked_at DESC
+	LIMIT $4 OFFSET $5
 	`
 
-	rows, err := db.Query(ctx, query, monitorID, from, to)
+	rows, err := db.Query(ctx, query, monitorID, from, to, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
-	results, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.CheckResult])
-	if err != nil {
-		return nil, err
+	var results []*models.CheckResult
+	var total int64
+
+	for rows.Next() {
+		var r models.CheckResult
+		err := rows.Scan(
+			&r.ID, &r.MonitorID, &r.Status, &r.ResultValue, &r.Message, &r.StatusCode, &r.Latency, &r.CheckedAt, &total,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		results = append(results, &r)
 	}
 
-	return results, nil
+	return results, total, nil
 }
 
 func ExportCheckResults(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) (pgx.Rows, error) {
