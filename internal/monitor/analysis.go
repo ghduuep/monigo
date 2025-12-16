@@ -72,7 +72,7 @@ func (m *MonitorManager) analyzePerformance(ctx context.Context, mon *models.Mon
 		return
 	}
 
-	history, err := database.GetRecentLatencies(ctx, m.db, mon.ID, 30)
+	history, err := database.GetRecentLatencies(ctx, m.db, mon.ID, 360)
 	if err == nil {
 		isAnom, msg := isAnomaly(res.Latency, history)
 		if isAnom {
