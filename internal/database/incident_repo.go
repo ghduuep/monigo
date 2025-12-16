@@ -46,21 +46,31 @@ func ResolveIncident(ctx context.Context, db *pgxpool.Pool, monitorID int) (*mod
 	return &inc, nil
 }
 
-func GetIncidentsByID(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) ([]*models.Incident, error) {
-	query := `SELECT * from incidents WHERE monitor_id = $1 AND started_at >= $2 AND started_at <= $3 ORDER BY started_at DESC`
+func GetIncidentsByMonitorID(ctx context.Context, db *pgxpool.Pool, monitorID, limit, offset int, from, to time.Time) ([]*models.Incident, int64, error) {
+	query := `SELECT * from incidents WHERE monitor_id = $1 AND started_at >= $2 AND started_at <= $3 ORDER BY started_at DESC LIMIT $4 OFFSET $5`
 
-	rows, err := db.Query(ctx, query, monitorID, from, to)
+	rows, err := db.Query(ctx, query, monitorID, from, to, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
-	results, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.Incident])
-	if err != nil {
-		return nil, err
+	var incidents []*models.Incident
+	var total int64
+
+	for rows.Next() {
+		var i models.Incident
+		err := rows.Scan(
+			&i.ID, &i.MonitorID, &i.StartedAt, &i.ResolvedAt, &i.Duration, &i.ErrorCause, &total,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		incidents = append(incidents, &i)
 	}
 
-	return results, nil
+	return incidents, total, nil
 }
 
 func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int, from, to time.Time) ([]*models.Incident, int64, error) {

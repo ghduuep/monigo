@@ -84,12 +84,12 @@ func GetLastChecks(ctx context.Context, db *pgxpool.Pool, monitorID int, from, t
 	}
 	defer rows.Close()
 
-	results, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.CheckResult])
+	checks, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[models.CheckResult])
 	if err != nil {
 		return nil, err
 	}
 
-	return results, nil
+	return checks, nil
 }
 
 func ExportCheckResults(ctx context.Context, db *pgxpool.Pool, monitorID int, from, to time.Time) (pgx.Rows, error) {
