@@ -74,6 +74,11 @@ type MonitorSummaryResponse struct {
 	Degraded int `json:"degraded"`
 }
 
+type IncidentSummaryResponse struct {
+	Total int `json:"total"`
+	Open  int `json:"open"`
+}
+
 type PaginationQuery struct {
 	Page  int `json:"page"`
 	Limit int `json:"limit"`

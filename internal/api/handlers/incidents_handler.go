@@ -137,3 +137,14 @@ func (h *Handler) ExportIncidentsCSV(c echo.Context) error {
 
 	return nil
 }
+
+func (h *Handler) GetIncidentsSummary(c echo.Context) error {
+	userID := getUserIdFromToken(c)
+
+	summary, err := database.GetIncidentSummary(c.Request().Context(), h.DB, userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch incidents summary."})
+	}
+
+	return c.JSON(http.StatusOK, summary)
+}

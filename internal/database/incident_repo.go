@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/ghduuep/pingly/internal/dto"
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -118,4 +119,24 @@ func ExportIncidents(ctx context.Context, db *pgxpool.Pool, userID int, from, to
 		`
 
 	return db.Query(ctx, query, userID, from, to)
+}
+
+func GetIncidentSummary(ctx context.Context, db *pgxpool.Pool, userID int) (dto.IncidentSummaryResponse, error) {
+	query := `
+		SELECT
+			COUNT(*) as total,
+			COUNT(*) FILTER (WHERE i.resolved_at IS NULL) as open
+		FROM incidents i
+		JOIN monitors m ON i.monitor_id = m.id
+		WHERE m.user_id = $1
+	`
+
+	var summary dto.IncidentSummaryResponse
+
+	err := db.QueryRow(ctx, query, userID).Scan(&summary.Total, &summary.Open)
+	if err != nil {
+		return dto.IncidentSummaryResponse{}, err
+	}
+
+	return summary, nil
 }
