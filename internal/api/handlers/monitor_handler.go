@@ -258,8 +258,6 @@ func (h *Handler) GetMonitorLastChecks(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 
-	page, limit, offset := getPaginationParams(c)
-
 	from, to, err := parseDataParams(c)
 	if err != nil {
 		if err.Error() == "data requested exceeds the 1 year retention policy" {
@@ -268,7 +266,7 @@ func (h *Handler) GetMonitorLastChecks(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
-	checks, total, err := database.GetLastChecks(c.Request().Context(), h.DB, id, limit, offset, from, to)
+	checks, err := database.GetLastChecks(c.Request().Context(), h.DB, id, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get checks."})
 	}
@@ -277,18 +275,7 @@ func (h *Handler) GetMonitorLastChecks(c echo.Context) error {
 		checks = []*models.CheckResult{}
 	}
 
-	lastPage := int(math.Ceil(float64(total) / float64(limit)))
-	response := dto.PaginatedResponse{
-		Data: checks,
-		Meta: dto.Meta{
-			CurrentPage: page,
-			Perpage:     limit,
-			Total:       total,
-			LastPage:    lastPage,
-		},
-	}
-
-	return c.JSON(http.StatusOK, response)
+	return c.JSON(http.StatusOK, checks)
 }
 
 func (h *Handler) GetMonitorLastIncidents(c echo.Context) error {
