@@ -449,3 +449,14 @@ func (h *Handler) UpdateMonitor(c echo.Context) error {
 
 	return c.NoContent(http.StatusOK)
 }
+
+func (h *Handler) GetMonitorsSummary(c echo.Context) error {
+	userID := getUserIdFromToken(c)
+
+	summary, err := database.GetMonitorSummary(c.Request().Context(), h.DB, userID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch summary."})
+	}
+
+	return c.JSON(http.StatusOK, summary)
+}

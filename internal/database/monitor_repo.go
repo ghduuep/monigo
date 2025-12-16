@@ -173,3 +173,43 @@ func UpdateMonitor(ctx context.Context, db *pgxpool.Pool, monitorID int, userID 
 
 	return nil
 }
+
+func GetMonitorSummary(ctx context.Context, db *pgxpool.Pool, userID int) (dto.MonitorSummaryResponse, error) {
+	query := `
+	SELECT last_check_status, COUNT(*)
+	FROM monitors
+	WHERE user_id = $1
+	GROUP BY last_check_status
+	`
+
+	rows, err := db.Query(ctx, query, userID)
+	if err != nil {
+		return dto.MonitorSummaryResponse{}, err
+	}
+	defer rows.Close()
+
+	var summary dto.MonitorSummaryResponse
+	var total int
+
+	for rows.Next() {
+		var status string
+		var count int
+
+		if err := rows.Scan(&status, &count); err != nil {
+			return dto.MonitorSummaryResponse{}, err
+		}
+
+		total += count
+
+		switch models.MonitorStatus(status) {
+		case models.StatusUp:
+			summary.Up = count
+		case models.StatusDown:
+			summary.Down = count
+		case models.StatusDegraded:
+			summary.Degraded = count
+		}
+	}
+	summary.Total = total
+	return summary, nil
+}

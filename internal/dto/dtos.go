@@ -67,6 +67,13 @@ type UpdateChannelRequest struct {
 	Enabled *bool   `json:"enabled" validate:"omitempty"`
 }
 
+type MonitorSummaryResponse struct {
+	Total    int `json:"total"`
+	Up       int `json:"up"`
+	Down     int `json:"down"`
+	Degraded int `json:"degraded"`
+}
+
 type PaginationQuery struct {
 	Page  int `json:"page"`
 	Limit int `json:"limit"`
