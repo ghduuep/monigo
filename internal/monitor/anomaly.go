@@ -3,6 +3,7 @@ package monitor
 import (
 	"fmt"
 	"math"
+	"slices"
 )
 
 func isAnomaly(currentLatency int64, history []int64) (bool, string) {
@@ -10,30 +11,44 @@ func isAnomaly(currentLatency int64, history []int64) (bool, string) {
 		return false, ""
 	}
 
-	var sum int64
-	for _, v := range history {
-		sum += v
+	sortedHistory := slices.Clone(history)
+	slices.Sort(sortedHistory)
+
+	median := calculateMedian(sortedHistory)
+
+	var deviations []float64
+	for _, val := range history {
+		diff := math.Abs(float64(val) - median)
+		deviations = append(deviations, diff)
 	}
 
-	mean := float64(sum) / float64(len(history))
+	slices.Sort(deviations)
+	mad := deviations[len(deviations)/2]
 
-	var varianceSum float64
-	for _, v := range history {
-		varianceSum += math.Pow(float64(v)-mean, 2)
-	}
-	stdDev := math.Sqrt(varianceSum / float64(len(history)))
-
-	if stdDev < 10.0 {
-		stdDev = 10.0
+	if mad < 1.0 {
+		mad = 1.0
 	}
 
-	zScore := (float64(currentLatency) - mean) / stdDev
+	modifiedZScore := 0.6745 * (float64(currentLatency) - median) / mad
 
-	thresholdZ := 3.0
+	threshold := 3.5
 
-	if zScore > thresholdZ {
-		return true, fmt.Sprintf("Anomaly detected! Latency %.0fms is abnormal (Mean %.0fms, Z-Score> %.2f)", float64(currentLatency), mean, zScore)
+	if modifiedZScore > threshold {
+		return true, fmt.Sprintf("Anomaly detected! Latency %.0fms (Median: %.0fms, Score: %.2f)", float64(currentLatency), median, modifiedZScore)
 	}
 
 	return false, ""
+}
+
+func calculateMedian(sorted []int64) float64 {
+	l := len(sorted)
+	if l == 0 {
+		return 0
+	}
+
+	if l%2 == 0 {
+		return float64(sorted[l/2-1]+sorted[l/2]) / 2.0
+	}
+
+	return float64(sorted[l/2])
 }
