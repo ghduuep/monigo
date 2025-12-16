@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -118,6 +119,7 @@ func (h *Handler) CreateMonitor(c echo.Context) error {
 	}
 
 	if err := database.CreateMonitor(c.Request().Context(), h.DB, &monitor); err != nil {
+		log.Printf("Error creating monitor: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Monitor already exists."})
 	}
 
