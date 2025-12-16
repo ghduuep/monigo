@@ -11,6 +11,7 @@ import (
 	"github.com/ghduuep/pingly/internal/models"
 	"github.com/ghduuep/pingly/internal/notification"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 type activeMonitor struct {
@@ -18,7 +19,7 @@ type activeMonitor struct {
 	config models.Monitor
 }
 
-func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notification.NotificationDispatcher) {
+func StartMonitoring(ctx context.Context, db *pgxpool.Pool, rdb *redis.Client, dispatcher notification.NotificationDispatcher) {
 	activeMonitors := make(map[int]*activeMonitor)
 
 	for {
@@ -35,7 +36,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notificat
 			active, exists := activeMonitors[m.ID]
 
 			if !exists {
-				startNewMonitor(ctx, db, *m, dispatcher, activeMonitors)
+				startNewMonitor(ctx, db, *m, rdb, dispatcher, activeMonitors)
 				continue
 			}
 
@@ -44,7 +45,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notificat
 
 				active.cancel()
 
-				startNewMonitor(ctx, db, *m, dispatcher, activeMonitors)
+				startNewMonitor(ctx, db, *m, rdb, dispatcher, activeMonitors)
 			}
 		}
 
@@ -60,7 +61,7 @@ func StartMonitoring(ctx context.Context, db *pgxpool.Pool, dispatcher notificat
 	}
 }
 
-func startNewMonitor(ctx context.Context, db *pgxpool.Pool, m models.Monitor, dispatcher notification.NotificationDispatcher, activeMap map[int]*activeMonitor) {
+func startNewMonitor(ctx context.Context, db *pgxpool.Pool, m models.Monitor, rdb *redis.Client, dispatcher notification.NotificationDispatcher, activeMap map[int]*activeMonitor) {
 	monitorCtx, cancel := context.WithCancel(ctx)
 
 	activeMap[m.ID] = &activeMonitor{
@@ -68,7 +69,7 @@ func startNewMonitor(ctx context.Context, db *pgxpool.Pool, m models.Monitor, di
 		config: m,
 	}
 
-	go runMonitorRoutine(monitorCtx, db, m, dispatcher)
+	go runMonitorRoutine(monitorCtx, db, m, rdb, dispatcher)
 	log.Printf("Started monitoring for monitor ID %d", m.ID)
 }
 
@@ -92,7 +93,7 @@ func hasMonitorChanges(old, new models.Monitor) bool {
 	return false
 }
 
-func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, dispatcher notification.NotificationDispatcher) {
+func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, rdb *redis.Client, dispatcher notification.NotificationDispatcher) {
 	const downInterval = 30 * time.Second
 
 	timer := time.NewTimer(m.Interval)
@@ -103,7 +104,7 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			currentStatus := processCheck(ctx, db, &m, dispatcher)
+			currentStatus := processCheck(ctx, db, &m, rdb, dispatcher)
 
 			nextCheckDuration := m.Interval
 
@@ -116,7 +117,7 @@ func runMonitorRoutine(ctx context.Context, db *pgxpool.Pool, m models.Monitor, 
 	}
 }
 
-func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, dispatcher notification.NotificationDispatcher) models.MonitorStatus {
+func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, rdb *redis.Client, dispatcher notification.NotificationDispatcher) models.MonitorStatus {
 	result := performCheck(*m)
 
 	var config models.DNSConfig
@@ -136,6 +137,33 @@ func processCheck(ctx context.Context, db *pgxpool.Pool, m *models.Monitor, disp
 				m.Config = newJSON
 			}
 		}
+	}
+
+	failKey := fmt.Sprintf("monitor:%d:fails", m.ID)
+	const failureThreshold = 2
+
+	if result.Status == models.StatusDown || result.Status == models.StatusDegraded {
+		if m.LastCheckStatus == models.StatusUp || m.LastCheckStatus == models.StatusUnknown {
+			count, err := rdb.Incr(ctx, failKey).Result()
+			if err != nil {
+				log.Printf("[ERROR] Failed to increment failure count in Redis: %v", err)
+				count = failureThreshold
+			}
+
+			rdb.Expire(ctx, failKey, 3*m.Interval)
+
+			if count < failureThreshold {
+				log.Printf("[INFO] Monitor %d flapping check (%d/%d). Suppressing alert.", m.ID, count, failureThreshold)
+
+				if err := database.UpdateLastCheck(ctx, db, m.ID); err != nil {
+					log.Printf("[ERROR] Failed to update last check: %v", err)
+				}
+
+				return m.LastCheckStatus
+			}
+		}
+	} else {
+		rdb.Del(ctx, failKey)
 	}
 
 	if result.Status == models.StatusUp && m.LatencyThreshold > 0 && result.Latency > int64(m.LatencyThreshold) {

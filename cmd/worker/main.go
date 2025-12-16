@@ -34,6 +34,9 @@ func main() {
 
 	dispatcher := notification.NewDispatcher(emailService, telegramService, smsService)
 
+	rdb := database.InitRedis()
+	defer rdb.Close()
+
 	db := database.InitDB()
 	defer db.Close()
 
@@ -42,7 +45,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	go monitor.StartMonitoring(ctx, db, *dispatcher)
+	go monitor.StartMonitoring(ctx, db, rdb, *dispatcher)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
