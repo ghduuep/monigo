@@ -81,7 +81,7 @@ func GetIncidentsByMonitorID(ctx context.Context, db *pgxpool.Pool, monitorID, l
 	return incidents, total, nil
 }
 
-func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int, from, to time.Time, monitorTarget, errorCause string) ([]*models.Incident, int64, error) {
+func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int, from, to time.Time, monitorTarget) ([]*models.Incident, int64, error) {
 	query := `
 		SELECT i.id, i.monitor_id, i.started_at, i.resolved_at, i.duration, i.error_cause, COUNT(*) OVER() as total
 		FROM incidents i
@@ -96,12 +96,6 @@ func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, 
 	if monitorTarget != "" {
 		query += fmt.Sprintf(" AND m.target ILIKE $%d", argIdx)
 		args = append(args, "%"+monitorTarget+"%")
-		argIdx++
-	}
-
-	if errorCause != "" {
-		query += fmt.Sprintf(" AND i.error_cause ILIKE $%d", argIdx)
-		args = append(args, "%"+errorCause+"%")
 		argIdx++
 	}
 

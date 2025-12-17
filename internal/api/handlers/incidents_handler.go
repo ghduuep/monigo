@@ -30,9 +30,8 @@ func (h *Handler) GetIncidents(c echo.Context) error {
 	qPeriod := c.QueryParam("period")
 
 	qTarget := c.QueryParam("target")
-	qError := c.QueryParam("error_cause")
 
-	cacheKey := fmt.Sprintf("user:%d:incidents:%s:%s:%s:%s:%s%d:%d", userID, qStart, qEnd, qPeriod, qTarget, qError, page, limit)
+	cacheKey := fmt.Sprintf("user:%d:incidents:%s:%s:%s:%s%d:%d", userID, qStart, qEnd, qPeriod, qTarget, page, limit)
 
 	var incidents []*models.Incident
 	if h.getCache(c.Request().Context(), cacheKey, &incidents) {
@@ -47,7 +46,7 @@ func (h *Handler) GetIncidents(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date parameters."})
 	}
 
-	incidents, total, err := database.GetIncidentsByUserID(c.Request().Context(), h.DB, userID, limit, offset, from, to, qTarget, qError)
+	incidents, total, err := database.GetIncidentsByUserID(c.Request().Context(), h.DB, userID, limit, offset, from, to, qTarget)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get incidents."})
 	}
