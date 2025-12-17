@@ -7,228 +7,184 @@ import (
 	"github.com/ghduuep/pingly/internal/models"
 )
 
-// Cores e Estilos comuns
 const (
-	colorGreen    = "#22c55e" // Success
-	colorRed      = "#ef4444" // Error
-	colorYellow   = "#eab308" // Warning
-	bgGray        = "#f3f4f6"
-	containerBody = `font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);`
+	colorSlate900 = "#0f172a"
+	colorSlate500 = "#64748b"
+	colorSlate400 = "#94a3b8"
+	colorSlate100 = "#f1f5f9"
+	colorWhite    = "#ffffff"
+	colorGreen    = "#10b981"
+	colorRed      = "#f43f5e"
+	colorAmber    = "#f59e0b"
+	colorBg       = "#f8fafc"
+
+	fontFamily = `'Helvetica Neue', Helvetica, Arial, sans-serif`
 )
 
-func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
-	var color, title, emoji string
-	timeLayout := "02/01/2006 às 15:04:05"
-
-	// Definição de Estados
-	switch res.Status {
-	case models.StatusDown:
-		color = colorRed
-		emoji = "🔴"
-		title = "Serviço Indisponível (DOWN)"
-	case models.StatusDegraded:
-		color = colorYellow
-		emoji = "🟡"
-		title = "Performance Degradada"
-	default:
-		color = colorGreen
-		emoji = "🟢"
-		title = "Serviço Recuperado (UP)"
-	}
-
-	// Detalhes do Incidente
-	var detailsHTML string
-	if inc != nil {
-		durationStr := "Calculando..."
-		if inc.Duration != nil {
-			durationStr = inc.Duration.Round(time.Second).String()
-		} else if res.Status == models.StatusUp && inc.ResolvedAt != nil {
-			// Se acabou de resolver, calcula a duração final
-			d := inc.ResolvedAt.Sub(inc.StartedAt)
-			durationStr = d.Round(time.Second).String()
-		}
-
-		detailsHTML += fmt.Sprintf(`
-			<div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; margin-top: 15px; border: 1px solid #e5e7eb;">
-				<p style="margin: 5px 0; color: #374151; font-size: 14px;"><strong>🆔 Incidente:</strong> #%d</p>
-				<p style="margin: 5px 0; color: #374151; font-size: 14px;"><strong>🕒 Início:</strong> %s</p>
-				<p style="margin: 5px 0; color: #374151; font-size: 14px;"><strong>⏱ Duração:</strong> %s</p>
+func buildBaseEmail(title, badgeText, badgeColor, target, bodyContent string) string {
+	return fmt.Sprintf(`
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	</head>
+	<body style="margin: 0; padding: 0; background-color: %s; font-family: %s;">
+		<div style="max-width: 600px; margin: 40px auto; background-color: %s; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid %s;">
+			
+			<div style="padding: 32px 32px 0 32px; display: flex; align-items: center; justify-content: space-between;">
+				<div style="font-size: 20px; font-weight: 900; color: %s; letter-spacing: -0.05em;">Pingly</div>
 			</div>
-		`, inc.ID, inc.StartedAt.Format(timeLayout), durationStr)
-	}
 
-	subject := fmt.Sprintf("%s [%s] %s", emoji, title, m.Target)
-
-	body := fmt.Sprintf(`
-		<div style="background-color: %s; padding: 40px 20px;">
-			<div style="%s">
-				<div style="background-color: %s; padding: 20px; text-align: center;">
-					<h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">%s</h1>
+			<div style="padding: 32px;">
+				<div style="margin-bottom: 24px;">
+					<span style="background-color: %s15; color: %s; padding: 6px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; display: inline-block; margin-bottom: 16px;">
+						%s
+					</span>
+					<h1 style="margin: 0; font-size: 32px; font-weight: 900; color: %s; letter-spacing: -0.03em; line-height: 1.1;">
+						%s
+					</h1>
+					<p style="margin: 8px 0 0 0; font-size: 14px; font-weight: 600; color: %s;">
+						%s
+					</p>
 				</div>
-				<div style="padding: 30px;">
-					<p style="font-size: 16px; color: #4b5563; margin-top: 0;">O monitor <strong>%s</strong> reportou um novo status.</p>
-					
-					<table style="width: 100%%; margin-top: 20px; border-collapse: collapse;">
-						<tr>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6;"><strong>🎯 Alvo</strong></td>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6; text-align: right; color: #6b7280;">%s</td>
-						</tr>
-						<tr>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6;"><strong>📊 Status</strong></td>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6; text-align: right; color: %s; font-weight: bold;">%s</td>
-						</tr>
-						<tr>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6;"><strong>⚡ Latência</strong></td>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6; text-align: right; color: #6b7280;">%dms</td>
-						</tr>
-						<tr>
-							<td style="padding: 10px;"><strong>💬 Mensagem</strong></td>
-							<td style="padding: 10px; text-align: right; color: #6b7280;">%s</td>
-						</tr>
-					</table>
 
+				<div style="background-color: %s; border-radius: 16px; padding: 24px; margin-bottom: 24px;">
 					%s
+				</div>
 
-					<div style="margin-top: 30px; text-align: center; color: #9ca3af; font-size: 12px;">
-						Enviado automaticamente pelo Pingly 📡
-					</div>
+				<div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid %s;">
+					<p style="margin: 0; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; color: %s;">
+						Infrastructure Monitoring
+					</p>
 				</div>
 			</div>
 		</div>
-	`, bgGray, containerBody, color, title, m.Target, m.Target, color, res.Status, res.Latency, res.Message, detailsHTML)
+	</body>
+	</html>
+	`, colorBg, fontFamily, colorWhite, colorSlate100, colorSlate900, badgeColor, badgeColor, badgeText, colorSlate900, title, colorSlate500, target, colorSlate100, bodyContent, colorSlate100, colorSlate400)
+}
+
+func buildRow(label, value string, isMono bool) string {
+	fontStack := fontFamily
+	if isMono {
+		fontStack = `'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace`
+	}
+	return fmt.Sprintf(`
+	<div style="margin-bottom: 16px; last-child: margin-bottom: 0;">
+		<p style="margin: 0 0 4px 0; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: %s;">%s</p>
+		<p style="margin: 0; font-size: 14px; font-weight: 600; color: %s; font-family: %s; word-break: break-all;">%s</p>
+	</div>
+	`, colorSlate400, label, colorSlate900, fontStack, value)
+}
+
+func BuildEmailHTTPMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
+	var color, statusText, title string
+
+	switch res.Status {
+	case models.StatusDown:
+		color = colorRed
+		statusText = "CRITICAL OUTAGE"
+		title = "Service Unreachable"
+	case models.StatusDegraded:
+		color = colorAmber
+		statusText = "PERFORMANCE DEGRADED"
+		title = "Latency Warning"
+	default:
+		color = colorGreen
+		statusText = "OPERATIONAL"
+		title = "Service Recovered"
+	}
+
+	content := buildRow("Response Time", fmt.Sprintf("%dms", res.Latency), true)
+	if res.Message != "" {
+		content += buildRow("Diagnostic Trace", res.Message, false)
+	}
+
+	if inc != nil {
+		content += `<div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #cbd5e1;">`
+		content += buildRow("Incident ID", fmt.Sprintf("#%d", inc.ID), true)
+		content += buildRow("Started At", inc.StartedAt.Format("15:04:05 MST"), false)
+
+		if inc.Duration != nil {
+			content += buildRow("Total Downtime", inc.Duration.Round(time.Second).String(), false)
+		}
+		content += "</div>"
+	}
+
+	subject := fmt.Sprintf("[%s] %s: %s", statusText, title, m.Target)
+	body := buildBaseEmail(title, statusText, color, m.Target, content)
 
 	return subject, body
 }
 
 func BuildEmailDNSRecoveredMessage(m models.Monitor, res models.CheckResult, dnsType string, inc *models.Incident) (string, string) {
-	subject := fmt.Sprintf("🟢 DNS Recuperado: %s (%s)", m.Target, dnsType)
+	content := buildRow("Record Type", dnsType, true)
+	content += buildRow("Resolved Value", res.ResultValue, true)
 
-	detailsHTML := ""
 	if inc != nil && inc.Duration != nil {
-		detailsHTML = fmt.Sprintf(`<p style="color: #374151;"><strong>Tempo de Instabilidade:</strong> %s</p>`, inc.Duration.Round(time.Second).String())
+		content += buildRow("Instability Duration", inc.Duration.Round(time.Second).String(), false)
 	}
 
-	body := fmt.Sprintf(`
-		<div style="background-color: %s; padding: 40px 20px;">
-			<div style="%s">
-				<div style="background-color: %s; padding: 20px; text-align: center;">
-					<h1 style="color: white; margin: 0; font-size: 24px;">DNS Resolvido ✅</h1>
-				</div>
-				<div style="padding: 30px;">
-					<p style="color: #4b5563;">O registo <strong>%s</strong> para <strong>%s</strong> está correto novamente.</p>
-					
-					<div style="background-color: #f0fdf4; border-left: 4px solid %s; padding: 15px; margin: 20px 0;">
-						<p style="margin: 0; color: #166534; font-family: monospace; font-size: 14px;">%s</p>
-					</div>
-					%s
-				</div>
-			</div>
-		</div>
-	`, bgGray, containerBody, colorGreen, dnsType, m.Target, colorGreen, res.ResultValue, detailsHTML)
+	subject := fmt.Sprintf("[RESOLVED] DNS Health: %s", m.Target)
+	body := buildBaseEmail("DNS Integrity Restored", "RESOLVED", colorGreen, m.Target, content)
 
 	return subject, body
 }
 
 func BuildEmailDNSStatusMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
-	subject := fmt.Sprintf("⚠️ Falha na Consulta DNS: %s", m.Target)
+	content := buildRow("Record Type", dnsType, true)
+	content += buildRow("Error Trace", res.Message, false)
 
-	body := fmt.Sprintf(`
-		<div style="background-color: %s; padding: 40px 20px;">
-			<div style="%s">
-				<div style="background-color: %s; padding: 20px; text-align: center;">
-					<h1 style="color: white; margin: 0; font-size: 24px;">Falha DNS ⚠️</h1>
-				</div>
-				<div style="padding: 30px;">
-					<p style="color: #4b5563;">Não foi possível validar o registo <strong>%s</strong> para <strong>%s</strong>.</p>
-					
-					<div style="background-color: #fffbeb; border: 1px solid %s; padding: 15px; border-radius: 4px; margin-top: 20px;">
-						<strong style="color: #92400e;">Erro Técnico:</strong>
-						<p style="margin: 5px 0; color: #b45309;">%s</p>
-					</div>
-				</div>
-			</div>
-		</div>
-	`, bgGray, containerBody, colorYellow, dnsType, m.Target, colorYellow, res.Message)
+	subject := fmt.Sprintf("[FAILURE] DNS Query Failed: %s", m.Target)
+	body := buildBaseEmail("DNS Lookup Failed", "QUERY ERROR", colorAmber, m.Target, content)
 
 	return subject, body
 }
 
 func BuildEmailDNSChangedMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
-	subject := fmt.Sprintf("🚨 DNS Alterado: %s (%s)", m.Target, dnsType)
+	content := buildRow("Record Type", dnsType, true)
+	content += buildRow("New Value Detected", res.ResultValue, true)
+	content += buildRow("Alert Message", res.Message, false)
 
-	body := fmt.Sprintf(`
-		<div style="background-color: %s; padding: 40px 20px;">
-			<div style="%s">
-				<div style="background-color: %s; padding: 20px; text-align: center;">
-					<h1 style="color: white; margin: 0; font-size: 24px;">Alteração Crítica 🚨</h1>
-				</div>
-				<div style="padding: 30px;">
-					<p style="color: #4b5563;">O registo DNS <strong>%s</strong> do alvo <strong>%s</strong> não corresponde ao esperado.</p>
-					
-					<div style="margin-top: 20px;">
-						<p style="font-size: 12px; color: #6b7280; text-transform: uppercase; margin-bottom: 5px;">Novo Valor Detectado:</p>
-						<div style="background-color: #fee2e2; border-left: 4px solid %s; padding: 15px;">
-							<code style="color: #991b1b; word-break: break-all;">%s</code>
-						</div>
-					</div>
-
-					<div style="margin-top: 20px; padding: 10px; border-top: 1px solid #e5e7eb;">
-						<p style="color: #6b7280; font-size: 14px;"><strong>Mensagem:</strong> %s</p>
-					</div>
-				</div>
-			</div>
-		</div>
-	`, bgGray, containerBody, colorRed, dnsType, m.Target, colorRed, res.ResultValue, res.Message)
+	subject := fmt.Sprintf("[ALERT] DNS Modified: %s", m.Target)
+	body := buildBaseEmail("Record Mismatch Detected", "INTEGRITY ALERT", colorRed, m.Target, content)
 
 	return subject, body
 }
 
 func BuildEmailPortMessage(m models.Monitor, res models.CheckResult, inc *models.Incident) (string, string) {
-	var color, title, emoji string
+	var color, statusText, title string
+
 	switch res.Status {
 	case models.StatusDown:
 		color = colorRed
-		emoji = "🔴"
-		title = "Falha de Conexão (TCP)"
+		statusText = "CONNECTION FAILED"
+		title = "Port Unreachable"
 	case models.StatusDegraded:
-		color = colorYellow
-		emoji = "🟡"
-		title = "Conexão Lenta (TCP)"
+		color = colorAmber
+		statusText = "HIGH LATENCY"
+		title = "Slow Connection"
 	default:
 		color = colorGreen
-		emoji = "🟢"
-		title = "Conexão Estabelecida"
+		statusText = "CONNECTED"
+		title = "Port Accessible"
 	}
 
-	subject := fmt.Sprintf("%s [%s] %s", emoji, title, m.Target)
+	content := buildRow("Latency", fmt.Sprintf("%dms", res.Latency), true)
 
-	body := fmt.Sprintf(`
-		<div style="background-color: %s; padding: 40px 20px;">
-			<div style="%s">
-				<div style="background-color: %s; padding: 20px; text-align: center;">
-					<h1 style="color: white; margin: 0; font-size: 24px;">%s</h1>
-				</div>
-				<div style="padding: 30px;">
-					<p style="color: #4b5563;">Status da porta TCP monitorizada.</p>
-					
-					<table style="width: 100%%; margin-top: 20px; border-collapse: collapse;">
-						<tr>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6;"><strong>Target</strong></td>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6; text-align: right;">%s</td>
-						</tr>
-						<tr>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6;"><strong>Latência</strong></td>
-							<td style="padding: 10px; border-bottom: 1px solid #f3f4f6; text-align: right;">%dms</td>
-						</tr>
-						<tr>
-							<td style="padding: 10px;"><strong>Resposta</strong></td>
-							<td style="padding: 10px; text-align: right;">%s</td>
-						</tr>
-					</table>
-				</div>
-			</div>
-		</div>
-	`, bgGray, containerBody, color, title, m.Target, res.Latency, res.Message)
+	if res.Message != "" {
+		content += buildRow("Error Detail", res.Message, false)
+	}
+
+	if inc != nil && inc.Duration != nil {
+		content += `<div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid #cbd5e1;">`
+		content += buildRow("Outage Duration", inc.Duration.Round(time.Second).String(), false)
+		content += "</div>"
+	}
+
+	subject := fmt.Sprintf("[%s] TCP Alert: %s", statusText, m.Target)
+	body := buildBaseEmail(title, statusText, color, m.Target, content)
 
 	return subject, body
 }

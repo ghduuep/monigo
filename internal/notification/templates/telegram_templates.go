@@ -13,36 +13,35 @@ func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, inc *mod
 	switch res.Status {
 	case models.StatusDown:
 		emoji = "🔴"
-		statusLine = "*SERVIÇO FORA DO AR*"
+		statusLine = "CRITICAL OUTAGE"
 	case models.StatusDegraded:
 		emoji = "🟡"
-		statusLine = "*PERFORMANCE DEGRADADA*"
+		statusLine = "PERFORMANCE DEGRADED"
 	default:
 		emoji = "🟢"
-		statusLine = "*SERVIÇO OPERACIONAL*"
+		statusLine = "OPERATIONAL"
 	}
 
 	subject := fmt.Sprintf("%s Pingly Alert", emoji)
 
-	body := fmt.Sprintf("%s\n\n", statusLine)
-	body += fmt.Sprintf("🔗 *Alvo:* `%s`\n", m.Target)
-	body += fmt.Sprintf("📡 *Status:* %s\n", res.Status)
-	body += fmt.Sprintf("⚡ *Latência:* `%dms`\n", res.Latency)
+	body := fmt.Sprintf("*%s*\n\n", statusLine)
+	body += fmt.Sprintf("📡 *TARGET RESOURCE*\n`%s`\n\n", m.Target)
+	body += fmt.Sprintf("⚡ *LATENCY*\n`%dms`\n\n", res.Latency)
 
 	if res.Message != "" {
-		body += fmt.Sprintf("📝 *Info:* _%s_\n", res.Message)
+		body += fmt.Sprintf("📝 *DIAGNOSTIC TRACE*\n_%s_\n\n", res.Message)
 	}
 
 	if inc != nil {
-		body += "\n➖➖➖➖➖➖➖\n"
-		body += fmt.Sprintf("🆔 *Incidente #%d*\n", inc.ID)
+		body += "➖➖➖➖➖➖➖➖➖\n"
+		body += fmt.Sprintf("🆔 *INCIDENT #%d*\n", inc.ID)
 		if inc.Duration != nil {
-			body += fmt.Sprintf("⏱ *Duração:* %s\n", inc.Duration.Round(time.Second))
+			body += fmt.Sprintf("⏱ *TOTAL DURATION*: `%s`\n", inc.Duration.Round(time.Second))
 		}
 		if inc.ResolvedAt != nil {
-			body += fmt.Sprintf("✅ *Resolvido em:* %s\n", inc.ResolvedAt.Format("15:04:05"))
+			body += fmt.Sprintf("✅ *RESOLVED*: `%s`", inc.ResolvedAt.Format("15:04:05"))
 		} else {
-			body += fmt.Sprintf("🕒 *Início:* %s\n", inc.StartedAt.Format("15:04:05"))
+			body += fmt.Sprintf("🕒 *STARTED*: `%s`", inc.StartedAt.Format("15:04:05"))
 		}
 	}
 
@@ -51,31 +50,32 @@ func BuildTelegramHTTPMessage(m models.Monitor, res models.CheckResult, inc *mod
 
 func BuildTelegramDNSRecoveredMessage(m models.Monitor, res models.CheckResult, dnsType string, inc *models.Incident) (string, string) {
 	subject := "🟢 Pingly DNS"
-	body := fmt.Sprintf("✅ *DNS Resolvido*\n\n")
-	body += fmt.Sprintf("🌍 *Alvo:* `%s`\n", m.Target)
-	body += fmt.Sprintf("🏷 *Tipo:* %s\n", dnsType)
-	body += fmt.Sprintf("🔢 *Valor:* `%s`\n", res.ResultValue)
+	body := "*DNS INTEGRITY RESTORED*\n\n"
+	body += fmt.Sprintf("🌍 *TARGET*: `%s`\n", m.Target)
+	body += fmt.Sprintf("🏷 *RECORD*: `%s`\n", dnsType)
+	body += fmt.Sprintf("🔢 *VALUE*: `%s`\n", res.ResultValue)
 
 	if inc != nil && inc.Duration != nil {
-		body += fmt.Sprintf("\n⏱ *Instabilidade:* %s", inc.Duration.Round(time.Second))
+		body += fmt.Sprintf("\n⏱ *INSTABILITY*: `%s`", inc.Duration.Round(time.Second))
 	}
 	return subject, body
 }
 
 func BuildTelegramDNSChangedMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
 	subject := "🚨 Pingly DNS Alert"
-	body := fmt.Sprintf("🚨 *ALTERAÇÃO DE DNS DETECTADA*\n\n")
-	body += fmt.Sprintf("O registo %s para `%s` foi modificado.\n\n", dnsType, m.Target)
-	body += fmt.Sprintf("🔻 *Novo Valor:*\n`%s`\n\n", res.ResultValue)
-	body += fmt.Sprintf("⚠️ *Mensagem:* %s", res.Message)
+	body := "*RECORD MISMATCH DETECTED*\n\n"
+	body += fmt.Sprintf("Target: `%s` (%s)\n\n", m.Target, dnsType)
+	body += "*NEW VALUE DETECTED*\n"
+	body += fmt.Sprintf("`%s`\n\n", res.ResultValue)
+	body += fmt.Sprintf("⚠️ *TRACE*: _%s_", res.Message)
 	return subject, body
 }
 
 func BuildTelegramDNSStatusMessage(m models.Monitor, res models.CheckResult, dnsType string) (string, string) {
 	subject := "⚠️ Pingly DNS Warning"
-	body := fmt.Sprintf("⚠️ *Falha na Consulta DNS*\n\n")
-	body += fmt.Sprintf("🌍 *Alvo:* `%s` (%s)\n", m.Target, dnsType)
-	body += fmt.Sprintf("❌ *Erro:* _%s_", res.Message)
+	body := "*QUERY FAILURE*\n\n"
+	body += fmt.Sprintf("🌍 *TARGET*: `%s` (%s)\n", m.Target, dnsType)
+	body += fmt.Sprintf("❌ *TRACE*: _%s_", res.Message)
 	return subject, body
 }
 
@@ -84,27 +84,27 @@ func BuildTelegramPortMessage(m models.Monitor, res models.CheckResult, inc *mod
 
 	if res.Status == models.StatusDown {
 		emoji = "🔴"
-		statusLine = "*FALHA DE CONEXÃO TCP*"
+		statusLine = "CONNECTION FAILED"
 	} else if res.Status == models.StatusDegraded {
 		emoji = "🟡"
-		statusLine = "*CONEXÃO LENTA*"
+		statusLine = "HIGH LATENCY"
 	} else {
 		emoji = "🟢"
-		statusLine = "*CONEXÃO ESTABELECIDA*"
+		statusLine = "CONNECTED"
 	}
 
 	subject := fmt.Sprintf("%s Pingly TCP", emoji)
 
-	body := fmt.Sprintf("%s\n\n", statusLine)
-	body += fmt.Sprintf("🔌 *Host:* `%s`\n", m.Target)
-	body += fmt.Sprintf("⚡ *Latência:* `%dms`\n", res.Latency)
+	body := fmt.Sprintf("*%s*\n\n", statusLine)
+	body += fmt.Sprintf("🔌 *HOST*: `%s`\n", m.Target)
+	body += fmt.Sprintf("⚡ *LATENCY*: `%dms`\n", res.Latency)
 
 	if res.Status != models.StatusUp {
-		body += fmt.Sprintf("❌ *Erro:* _%s_\n", res.Message)
+		body += fmt.Sprintf("\n❌ *TRACE*: _%s_\n", res.Message)
 	}
 
 	if inc != nil && inc.Duration != nil {
-		body += fmt.Sprintf("\n⏱ *Duração:* %s", inc.Duration.Round(time.Second))
+		body += fmt.Sprintf("\n⏱ *DURATION*: `%s`", inc.Duration.Round(time.Second))
 	}
 
 	return subject, body
