@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/ghduuep/pingly/internal/dto"
@@ -80,18 +81,34 @@ func GetIncidentsByMonitorID(ctx context.Context, db *pgxpool.Pool, monitorID, l
 	return incidents, total, nil
 }
 
-func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int, from, to time.Time) ([]*models.Incident, int64, error) {
+func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int, from, to time.Time, monitorTarget, errorCause string) ([]*models.Incident, int64, error) {
 	query := `
 		SELECT i.id, i.monitor_id, i.started_at, i.resolved_at, i.duration, i.error_cause, COUNT(*) OVER() as total
 		FROM incidents i
 		JOIN monitors m ON i.monitor_id = m.id
 		WHERE m.user_id = $1 
 		AND i.started_at >= $2 AND i.started_at <= $3
-		ORDER BY i.started_at DESC
-		LIMIT $4 OFFSET $5
 		`
 
-	rows, err := db.Query(ctx, query, userID, from, to, limit, offset)
+	args := []any{userID, from, to}
+	argIdx := 4
+
+	if monitorTarget != "" {
+		query += fmt.Sprintf(" AND m.target ILIKE $%d", argIdx)
+		args = append(args, "%"+monitorTarget+"%")
+		argIdx++
+	}
+
+	if errorCause != "" {
+		query += fmt.Sprintf(" AND i.error_cause ILIKE $%d", argIdx)
+		args = append(args, "%"+errorCause+"%")
+		argIdx++
+	}
+
+	query += fmt.Sprintf(" ORDER BY i.started_at DESC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+	args = append(args, limit, offset)
+
+	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}

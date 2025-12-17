@@ -12,15 +12,32 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int) ([]*models.Monitor, int64, error) {
+func GetMonitorsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int, targetFilter, typeFilter string) ([]*models.Monitor, int64, error) {
 	query := `
 	SELECT id, user_id, target, type, config, interval, timeout, latency_threshold_ms, last_check_status, last_check_at, status_changed_at, created_at, COUNT(*) OVER() as total 
-	FROM monitors 
-	WHERE user_id = $1
-	ORDER BY created_at DESC
-	LIMIT $2 OFFSET $3
+	FROM monitors
+	WHERE user_id = $1 
 	`
-	rows, err := db.Query(ctx, query, userID, limit, offset)
+
+	args := []any{userID}
+	argIdx := 2
+
+	if targetFilter != "" {
+		query += fmt.Sprintf(" AND target ILIKE $%d", argIdx)
+		args = append(args, "%"+targetFilter+"%")
+		argIdx++
+	}
+
+	if typeFilter != "" {
+		query += fmt.Sprintf(" AND type = $%d", argIdx)
+		args = append(args, typeFilter)
+		argIdx++
+	}
+
+	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", argIdx, argIdx+1)
+	args = append(args, limit, offset)
+
+	rows, err := db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}

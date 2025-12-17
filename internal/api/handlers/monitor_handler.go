@@ -28,7 +28,10 @@ func (h *Handler) GetMonitors(c echo.Context) error {
 
 	page, limit, offset := getPaginationParams(c)
 
-	monitors, total, err := database.GetMonitorsByUserID(c.Request().Context(), h.DB, userID, limit, offset)
+	targetFilter := c.QueryParam("target")
+	typeFilter := c.QueryParam("type")
+
+	monitors, total, err := database.GetMonitorsByUserID(c.Request().Context(), h.DB, userID, limit, offset, targetFilter, typeFilter)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get monitors."})
 	}
