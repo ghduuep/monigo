@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ghduuep/pingly/internal/models"
@@ -26,11 +27,17 @@ func checkHTTP(m models.Monitor) models.CheckResult {
 	latency := time.Since(start).Milliseconds()
 
 	if err != nil {
+		message := err.Error()
+
+		if strings.Contains(message, "deadline exceeded") {
+			message = "Connection Timeout"
+		}
+
 		return models.CheckResult{
 			MonitorID: m.ID,
 			Status:    models.StatusDown,
 			Latency:   latency,
-			Message:   err.Error(),
+			Message:   message,
 			CheckedAt: time.Now(),
 		}
 	}
