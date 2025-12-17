@@ -21,7 +21,6 @@ func CreateCheckResult(ctx context.Context, db *pgxpool.Pool, result *models.Che
 
 func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int, threshold int64, from, to time.Time) (dto.MonitorStatsResponse, error) {
 	query := `SELECT
-				COALESCE(SUM(total_checks), 0) as total_checks,
 				COALESCE(SUM(sum_latency) / NULLIF(SUM(total_checks), 0), 0) as avg_latency,
 				COALESCE(MIN(min_latency), 0) as min_latency,
 				COALESCE(MAX(max_latency), 0) as max_latency,
@@ -37,7 +36,6 @@ func GetMonitorStats(ctx context.Context, db *pgxpool.Pool, monitorID int, thres
 	stats.MonitorID = monitorID
 
 	err := db.QueryRow(ctx, query, monitorID, from, to).Scan(
-		&stats.TotalChecks,
 		&stats.AvgLatency,
 		&stats.MinLatency,
 		&stats.MaxLatency,

@@ -39,7 +39,6 @@ type MonitorStatsResponse struct {
 	AvgLatency       float64 `json:"avg_latency"`
 	MinLatency       float64 `json:"min_latency"`
 	MaxLatency       float64 `json:"max_latency"`
-	TotalChecks      int     `json:"total_checks"`
 	ApdexScore       float64 `json:"apdex_score"`
 }
 
