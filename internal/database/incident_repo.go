@@ -81,7 +81,7 @@ func GetIncidentsByMonitorID(ctx context.Context, db *pgxpool.Pool, monitorID, l
 	return incidents, total, nil
 }
 
-func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int, from, to time.Time, monitorTarget) ([]*models.Incident, int64, error) {
+func GetIncidentsByUserID(ctx context.Context, db *pgxpool.Pool, userID, limit, offset int, from, to time.Time, monitorTarget string) ([]*models.Incident, int64, error) {
 	query := `
 		SELECT i.id, i.monitor_id, i.started_at, i.resolved_at, i.duration, i.error_cause, COUNT(*) OVER() as total
 		FROM incidents i
