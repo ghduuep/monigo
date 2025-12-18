@@ -42,7 +42,7 @@ func (m *MonitorManager) isConfirmedFailure(ctx context.Context, mon *models.Mon
 }
 
 func (m *MonitorManager) handleDNSLearning(ctx context.Context, mon *models.Monitor, res *models.CheckResult) {
-	if mon.Type != models.TypeDNS || res.Status != models.StatusUp || res.ResultValue != "" {
+	if mon.Type != models.TypeDNS || res.Status != models.StatusUp || res.ResultValue == "" {
 		return
 	}
 
