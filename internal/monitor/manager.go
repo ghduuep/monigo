@@ -132,5 +132,5 @@ func (m *MonitorManager) stopAll() {
 }
 
 func (m *MonitorManager) hasChanged(old, new models.Monitor) bool {
-	return old.Target != new.Target || old.Interval != new.Interval || old.Timeout != new.Timeout || !reflect.DeepEqual(old.Config, new.Config)
+	return old.Target != new.Target || old.Interval != new.Interval || old.Timeout != new.Timeout || old.LatencyThreshold != new.LatencyThreshold || !reflect.DeepEqual(old.Config, new.Config)
 }
