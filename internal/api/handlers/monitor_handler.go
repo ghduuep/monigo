@@ -36,13 +36,31 @@ func (h *Handler) GetMonitors(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to get monitors."})
 	}
 
+	dtos := make([]dto.MonitorResponse, len(monitors))
+
+	for i, m := range monitors {
+		dtos[i] = dto.MonitorResponse{
+			ID:               m.ID,
+			UserID:           m.UserID,
+			Target:           m.Target,
+			Type:             m.Type,
+			Config:           m.Config,
+			Interval:         m.Interval,
+			Timeout:          m.Timeout,
+			LatencyThreshold: m.LatencyThreshold,
+			LastCheckStatus:  m.LastCheckStatus,
+			LastCheckAt:      m.LastCheckAt,
+			StatusChangedAt:  m.StatusChangedAt,
+		}
+	}
+
 	if monitors == nil {
-		monitors = []*models.Monitor{}
+		dtos = []dto.MonitorResponse{}
 	}
 
 	lastPage := int(math.Ceil(float64(total) / float64(limit)))
 	response := dto.PaginatedResponse{
-		Data: monitors,
+		Data: dtos,
 		Meta: dto.Meta{
 			CurrentPage: page,
 			Perpage:     limit,
