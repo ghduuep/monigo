@@ -97,7 +97,20 @@ func (h *Handler) GetMonitorByID(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Monitor not found."})
 	}
 
-	return c.JSON(http.StatusOK, monitor)
+	dto := dto.MonitorResponse{
+		UserID:           monitor.UserID,
+		Target:           monitor.Target,
+		Type:             monitor.Type,
+		Config:           monitor.Config,
+		Interval:         monitor.Interval,
+		Timeout:          monitor.Timeout,
+		LatencyThreshold: monitor.LatencyThreshold,
+		LastCheckStatus:  monitor.LastCheckStatus,
+		LastCheckAt:      monitor.LastCheckAt,
+		StatusChangedAt:  monitor.StatusChangedAt,
+	}
+
+	return c.JSON(http.StatusOK, dto)
 }
 
 // @Summary Create a new monitor
