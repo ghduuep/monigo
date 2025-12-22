@@ -143,7 +143,15 @@ func (h *Handler) ExportIncidentsCSV(c echo.Context) error {
 func (h *Handler) GetIncidentsSummary(c echo.Context) error {
 	userID := getUserIdFromToken(c)
 
-	summary, err := database.GetIncidentSummary(c.Request().Context(), h.DB, userID)
+	from, to, err := parseDataParams(c)
+	if err != nil {
+		if err.Error() == "data requested exceeds the 1 year retention policy" {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Cannot query data older than 1 year."})
+		}
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid date params."})
+	}
+
+	summary, err := database.GetIncidentSummary(c.Request().Context(), h.DB, userID, from, to)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch incidents summary."})
 	}
